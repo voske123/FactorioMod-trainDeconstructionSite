@@ -11,7 +11,7 @@ require "prototypes.recipe.traindisassembly-controller"
 require "prototypes.recipe.traindisassembly-traindisassembling-updates"
 --
 require "prototypes.entity.traindisassembly-placeable"
---require "prototypes.entity.trainassembly-machine"
+require "prototypes.entity.traindisassembly-machine"
 require "prototypes.entity.traindisassembly-controller"
 --
 require "prototypes.technology.traindisassembly"
