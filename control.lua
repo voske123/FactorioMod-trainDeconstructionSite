@@ -2,7 +2,7 @@ require("__LSlib__/LSlib")
 
 --require "src.debug"
 require "src.traindisassembly"
---require "src.traincontroller"
+require "src.traincontroller"
 --require "src.mod-compatibility"
 
 --local onConfigChanges = require("src.mod-config")
@@ -15,14 +15,14 @@ script.on_init(function(event)
   -- when a save file is loaded that previously didn't contain the mod.
   --Debug           :onInit()
   TrainDisassembly   :onInit()
-  --Traincontroller :onInit()
+  Traincontroller :onInit()
   --ModCompatibility:onInit()
 end)
 
 
 
 script.on_load(function()
-  --Traincontroller :onLoad()
+  Traincontroller :onLoad()
   --ModCompatibility:onLoad()
 end)
 
@@ -30,7 +30,7 @@ end)
 
 script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   -- called when a mod setting changed
-  --Traincontroller:onSettingChanged(event)
+  Traincontroller:onSettingChanged(event)
 end)
 
 
@@ -59,7 +59,7 @@ script.on_event({defines.events.on_built_entity      ,
   if createdEntity and createdEntity.valid then
     local playerIndex = event.player_index
     TrainDisassembly  :onBuildEntity(createdEntity, playerIndex)
-    --Traincontroller:onBuildEntity(createdEntity, playerIndex)
+    Traincontroller:onBuildEntity(createdEntity, playerIndex)
   end
 end)
 
@@ -73,7 +73,7 @@ script.on_event({defines.events.on_player_mined_entity,
   local removedEntity = event.entity
   if removedEntity and removedEntity.valid then
     TrainDisassembly  :onRemoveEntity(removedEntity)
-    --Traincontroller:onRemoveEntity(removedEntity)
+    Traincontroller:onRemoveEntity(removedEntity)
   end
 end)
 
@@ -92,22 +92,7 @@ script.on_event({defines.events.on_player_rotated_entity,
   local rotatedEntity = event.entity
   if rotatedEntity and rotatedEntity.valid then
     TrainDisassembly  :onPlayerRotatedEntity(rotatedEntity)
-    --Traincontroller:onPlayerRotatedEntity(rotatedEntity, event.player_index)
   end
-end)
-
-
-
-script.on_event(defines.events.on_entity_settings_pasted, function(event)
-  -- Called after entity copy-paste is done.
-  --Traincontroller:onPlayerChangedSettings(event.destination, event.player_index)
-end)
-
-
-
-script.on_event(defines.events.on_entity_renamed, function(event)
-  -- Called after an entity has been renamed either by the player or through script.
-  --Traincontroller:onRenameEntity(event.entity, event.old_name)
 end)
 
 

@@ -13,6 +13,17 @@ traincontroller.icon_size = data.raw["item"][traincontroller.minable.result].ico
 traincontroller.icons = util.table.deepcopy(data.raw["item"][traincontroller.minable.result].icons)
 traincontroller.icon_mipmaps = data.raw["item"][traincontroller.minable.result].icon_mipmaps
 
+traincontroller.chart_name = true
+for _,flag in pairs{
+  "not-on-map"
+} do
+  for i,f in pairs(traincontroller.flags or {}) do
+    if f == flag then
+      table.remove(traincontroller.flags, i)
+    end
+  end
+end
+
 -- hidden entities --
 local traincontrollerSignal = util.table.deepcopy(data.raw["rail-signal"]["traincontroller-signal"])
 

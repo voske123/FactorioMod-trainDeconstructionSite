@@ -203,8 +203,7 @@ function TrainDisassembly:saveNewStructure(machineEntity, machineRenderID)
       --               Only the northwest one was detected, we add it to his
       --               trainbuilder.
       local trainDemolisherIndex = global.TD_data["trainDisassemblers"][trainDisassemblerNW.surface.index][trainDisassemblerNW.position.y][trainDisassemblerNW.position.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 206")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- add reference to the trainBuilder in the trainassembly
       global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndex
@@ -220,8 +219,7 @@ function TrainDisassembly:saveNewStructure(machineEntity, machineRenderID)
       --               Only the southeast one was detected, we add it to his
       --               trainbuilder.
       local trainDemolisherIndex = global.TD_data["trainDisassemblers"][trainDisassemblerSE.surface.index][trainDisassemblerSE.position.y][trainDisassemblerSE.position.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 223")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- add reference to the trainBuilder in the trainassembly
       global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndex
@@ -238,10 +236,8 @@ function TrainDisassembly:saveNewStructure(machineEntity, machineRenderID)
       --              together. Let's merge the SE one inside the NW one
       local trainDemolisherIndexNW = global.TD_data["trainDisassemblers"][trainDisassemblerNW.surface.index][trainDisassemblerNW.position.y][trainDisassemblerNW.position.x]["trainDemolisherIndex"]
       local trainDemolisherIndexSE = global.TD_data["trainDisassemblers"][trainDisassemblerSE.surface.index][trainDisassemblerSE.position.y][trainDisassemblerSE.position.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 241")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndexNW)
-      game.print("TODO: TrainDisassembler line 243")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndexSE)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndexNW)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndexSE)
 
       for trainDisassemblerIndex, trainDisassemblerRef in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndexSE]) do
         -- Move the reference into the other trainBuilder
@@ -383,8 +379,7 @@ function TrainDisassembly:deleteBuilding(machineEntity)
   -- STEP 2c: Now that we found the entities, we can start updating the trainBuilder
   if (not trainDisassemblerNW) and (not trainDisassemblerSE) then
     local trainDemolisherIndex = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 386")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
     global.TD_data["trainDemolishers"][trainDemolisherIndex] = nil
     local lastTrainBuilderIndex = global.TD_data["nextTrainDemolisherIndex"] - 1
@@ -407,8 +402,7 @@ function TrainDisassembly:deleteBuilding(machineEntity)
     if (trainDisassemblerNW and (not trainDisassemblerSE)) or (trainDisassemblerSE and (not trainDisassemblerNW)) then -- only one neighbour
 
       local trainDemolisherIndex = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 412")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- delete the assembler out of the trainbuilder
       for locationIndex, location in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndex]) do
@@ -421,8 +415,7 @@ function TrainDisassembly:deleteBuilding(machineEntity)
     else -- there are two neighbours
 
       local trainDemolisherIndex  = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
-      game.print("TODO: TrainDisassembler line 426")
-      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
       local newTrainBuilderIndex = global.TD_data["nextTrainDemolisherIndex"]
       global.TD_data["trainDemolishers"][newTrainBuilderIndex] = {}
 
@@ -519,6 +512,14 @@ function TrainDisassembly:setRemovedEntity(machineSurfaceIndex, machinePosition,
   --         can return the entity on this location.
   global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["removedEntity"] = removedEntity
   return true
+end
+
+
+
+function TrainDisassembly:cancelDemolishionOfEntity(machineSurfaceIndex, machinePosition)
+  game.print("TODO: cancel demolishion of entity")
+  -- only cancel when no demolishionEntity is registered to the data structure
+  -- TrainDisassembly:getRemovedEntity(machineSurfaceIndex, machinePosition)
 end
 
 
@@ -983,7 +984,7 @@ function TrainDisassembly:onRemoveEntity(removedEntity)
       limit    = 1,
     } > 0 then
       self:setRemovedEntity(removedEntity.surface.index, removedEntity.position, nil)
-      game.print("TODO: Clear furnace content (+active recipe) TrainDsassembly line 993")
+      self:cancelDemolishionOfEntity(removedEntity.surface.index, removedEntity.position)
     end
   end
 end
