@@ -1,4 +1,5 @@
 local traindisassembly = util.table.deepcopy(data.raw["assembling-machine"]["trainassembly-machine"])
+local trainassemblyName = traindisassembly.name
 
 traindisassembly.type =            "furnace"
 traindisassembly.name =            "traindisassembly-machine"
@@ -38,6 +39,20 @@ traindisassembly.source_inventory_size = 0
 data:extend{
   util.table.deepcopy(traindisassembly),
 }
+
+-- split the rendering from the machine
+for orientation,orientation_string in pairs{
+  ["north"] = "N",
+  ["east" ] = "E",
+  ["south"] = "S",
+  ["west" ] = "W",
+} do
+  for _,animation_layer in pairs{ "-base", "-overlay", "" } do
+    local animation = util.table.deepcopy(data.raw["animation"][trainassemblyName .. "-" .. orientation .. animation_layer])
+    animation.name = traindisassembly.name .. "-" .. orientation .. animation_layer
+    data:extend{animation}
+  end
+end
 
 -- now create the selector
 traindisassembly.name = traindisassembly.name .. "-recipe-selector"

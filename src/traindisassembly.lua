@@ -2,30 +2,30 @@ require 'util'
 require("__LSlib__/LSlib")
 
 -- Create class
-Trainassembly = {}
+TrainDisassembly = {}
 
 --------------------------------------------------------------------------------
 -- Initiation of the class
 --------------------------------------------------------------------------------
-function Trainassembly:onInit()
+function TrainDisassembly:onInit()
   -- Init global data; data stored through the whole map
-  if not global.TA_data then
-    global.TA_data = self:initGlobalData()
+  if not global.TD_data then
+    global.TD_data = self:initGlobalData()
   end
 end
 
 
 
 -- Initiation of the global data
-function Trainassembly:initGlobalData()
+function TrainDisassembly:initGlobalData()
   local TA_data = {
-    ["version"] = 3, -- version of the global data
+    ["version"] = 1, -- version of the global data
     ["prototypeData"] = self:initPrototypeData(), -- data storing info about the prototypes
 
-    ["trainAssemblers"] = {}, -- keep track of all assembling machines
+    ["trainDisassemblers"] = {}, -- keep track of all assembling machines
 
-    ["trainBuilders"] = {}, -- keep track of all builders that contain one or more trainAssemblers
-    ["nextTrainBuilderIndex"] = 1, -- next free space in the trainBuilders table
+    ["trainDemolishers"] = {}, -- keep track of all builders that contain one or more trainDisassemblers
+    ["nextTrainDemolisherIndex"] = 1, -- next free space in the trainDemolishers table
   }
 
   return util.table.deepcopy(TA_data)
@@ -34,14 +34,13 @@ end
 
 
 -- Initialisation of the prototye data inside the global data
-function Trainassembly:initPrototypeData()
+function TrainDisassembly:initPrototypeData()
   return
   {
-    ["itemName"     ] = "trainassembly",           -- the item
-    ["placeableName"] = "trainassembly-placeable", -- locomotive entity
-    ["machineName"  ] = "trainassembly-machine",   -- assembling entity
+    ["itemName"     ] = "traindisassembly",           -- the item
+    ["placeableName"] = "traindisassembly-placeable", -- locomotive entity
+    ["machineName"  ] = "traindisassembly-machine",   -- assembling entity
 
-    ["trainTint"    ] = {},                        -- the tint of each created entity
     ["rollingStock" ] = {                          -- the types of rolling stocks
       ["locomotive"     ] = true,
       ["cargo-wagon"    ] = true,
@@ -57,7 +56,7 @@ end
 -- Setter functions to alter data into the data structure
 --------------------------------------------------------------------------------
 -- Save a new trainassembly to our data structure
-function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
+function TrainDisassembly:saveNewStructure(machineEntity, machineRenderID)
   -- With this function we save all the data we want about a trainassembly.
   -- To index all machines we need a (unique) way of storing all the data,
   -- here we chose to index it by its location, since only 1 building can
@@ -72,29 +71,28 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
   local machineSurface  = machineEntity.surface
   local machinePosition = machineEntity.position
 
-  -- STEP 2: Save the assembler in the trainAssemblers datastructure
+  -- STEP 2: Save the assembler in the trainDisassemblers datastructure
   -- STEP 2a:Make sure we can index it, meaning, check if the table already
   --         excists for the surface, if not, we make one. Afther that we also
   --         have to check if the surface table has a table we can index for
   --         the y-position, if not, we make one.
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
-    global.TA_data["trainAssemblers"][machineSurface.index] = {}
+  if not global.TD_data["trainDisassemblers"][machineSurface.index] then
+    global.TD_data["trainDisassemblers"][machineSurface.index] = {}
   end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
-    global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] = {}
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] then
+    global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] = {}
   end
 
   -- STEP 2b:Now we know we can index (without crashing) to the position as:
   --         dataStructure[surfaceIndex][positionY][positionX]
   --         Now we can store our wanted data at this position
-  global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] =
+  global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] =
   {
     ["entity"           ] = machineEntity,           -- the entity
-    ["renderID"         ] = machineRenderID,         -- the render of the building
+    ["renderID"         ] = machineRenderID,         -- the renders of the building
     ["direction"        ] = machineEntity.direction, -- the direction its facing
-    ["trainColor"       ] = LSlib.utils.table.convertRGBA{r = 234, g = 17, b = 0}, -- the color of the train entity when it will be created
-    ["createdEntity"    ] = nil,                     -- the created train entity from this building
-    ["trainBuilderIndex"] = nil,                     -- the trainBuilder it belongs to (see further down)
+    ["removedEntity"    ] = nil,                     -- the created train entity from this building
+    ["trainDemolisherIndex"] = nil,                     -- the trainBuilder it belongs to (see further down)
   }
 
   -- STEP 3: Check if this assembler is linked to another assemblers to make
@@ -102,11 +100,11 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
   -- STEP 3a:Check for entities around this one. We know we only have to look
   --         in the same direction as its facing, as that is the directon the
   --         train will be build in
-  local trainAssemblerNW, trainAssemblerSE
+  local trainDisassemblerNW, trainDisassemblerSE
   if machineEntity.direction == defines.direction.north or machineEntity.direction == defines.direction.south then
     -- machine is placed vertical, look vertical (y-axis)
     -- north
-    trainAssemblerNW = machineSurface.find_entities_filtered{
+    trainDisassemblerNW = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -114,7 +112,7 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
       limit    = 1,
     }
     -- south
-    trainAssemblerSE = machineSurface.find_entities_filtered{
+    trainDisassemblerSE = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -124,7 +122,7 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
   else
     -- machine is placed horizontal, look horizontal (x-axis)
     -- west
-    trainAssemblerNW = machineSurface.find_entities_filtered{
+    trainDisassemblerNW = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -132,7 +130,7 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
       limit    = 1,
     }
     -- east
-    trainAssemblerSE = machineSurface.find_entities_filtered{
+    trainDisassemblerSE = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -143,52 +141,52 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
 
   -- find_entities_filtered returns a list, we want only the entity,
   -- so we get it out of the table. Also make sure it is valid
-  if not LSlib.utils.table.isEmpty(trainAssemblerNW) then
-    trainAssemblerNW = trainAssemblerNW[1]
-    if not trainAssemblerNW.valid then
-      trainAssemblerNW = nil
+  if not LSlib.utils.table.isEmpty(trainDisassemblerNW) then
+    trainDisassemblerNW = trainDisassemblerNW[1]
+    if not trainDisassemblerNW.valid then
+      trainDisassemblerNW = nil
     end
   else
-    trainAssemblerNW = nil
+    trainDisassemblerNW = nil
   end
-  if not LSlib.utils.table.isEmpty(trainAssemblerSE) then
-    trainAssemblerSE = trainAssemblerSE[1]
-    if not trainAssemblerSE.valid then
-      trainAssemblerSE = nil
+  if not LSlib.utils.table.isEmpty(trainDisassemblerSE) then
+    trainDisassemblerSE = trainDisassemblerSE[1]
+    if not trainDisassemblerSE.valid then
+      trainDisassemblerSE = nil
     end
   else
-    trainAssemblerSE = nil
+    trainDisassemblerSE = nil
   end
 
   -- STEP 3b:We found some entities now (maybe), but we still have to check if
   --         they are validly placed. If they aren't valid, we discard them too
   --         Validly placed item: - has same or oposite direction
-  if trainAssemblerNW and trainAssemblerNW.valid then
+  if trainDisassemblerNW and trainDisassemblerNW.valid then
     -- Check if its facing the same or oposite direction, if not, discard.
-    if not (trainAssemblerNW.direction == machineEntity.direction
-            or trainAssemblerNW.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
-      trainAssemblerNW = nil
+    if not (trainDisassemblerNW.direction == machineEntity.direction
+            or trainDisassemblerNW.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
+      trainDisassemblerNW = nil
     end
   end
-  if trainAssemblerSE and trainAssemblerSE.valid then
+  if trainDisassemblerSE and trainDisassemblerSE.valid then
     -- Check if its facing the same or oposite direction, if not, discard.
-    if not (trainAssemblerSE.direction == machineEntity.direction
-            or trainAssemblerSE.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
-      trainAssemblerSE = nil
+    if not (trainDisassemblerSE.direction == machineEntity.direction
+            or trainDisassemblerSE.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
+      trainDisassemblerSE = nil
     end
   end
 
   -- STEP 3c:We found valid entities (maybe), either way, we have to add this
   --         assembling machine to a trainBuilder
-  if (not trainAssemblerNW) and (not trainAssemblerSE) then
+  if (not trainDisassemblerNW) and (not trainDisassemblerSE) then
     -- OPTION 3c.1: there is no neighbour detected, we create a new one
-    local trainBuilderIndex = global.TA_data["nextTrainBuilderIndex"]
+    local trainDemolisherIndex = global.TD_data["nextTrainDemolisherIndex"]
 
     -- add reference to the trainassembly
-    global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"] = trainBuilderIndex
+    global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndex
 
-    -- and add the new trainBuilder with a single trainAssembler reference
-    global.TA_data["trainBuilders"][trainBuilderIndex] =
+    -- and add the new trainBuilder with a single trainDisassembler reference
+    global.TD_data["trainDemolishers"][trainDemolisherIndex] =
     {
       {
         ["surfaceIndex"] = machineSurface.index,
@@ -197,53 +195,57 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
     }
 
     -- new trainbuilder added, now increment the nextIndex
-    global.TA_data["nextTrainBuilderIndex"] = trainBuilderIndex + 1
+    global.TD_data["nextTrainDemolisherIndex"] = trainDemolisherIndex + 1
 
   else -- there is one or more neighbours
-    if (trainAssemblerNW and (not trainAssemblerSE)) then
+    if (trainDisassemblerNW and (not trainDisassemblerSE)) then
       -- OPTION 3c.2a: There is only one neighbour detected.
       --               Only the northwest one was detected, we add it to his
       --               trainbuilder.
-      local trainBuilderIndex = global.TA_data["trainAssemblers"][trainAssemblerNW.surface.index][trainAssemblerNW.position.y][trainAssemblerNW.position.x]["trainBuilderIndex"]
-      Traincontroller:onTrainbuilderAltered(trainBuilderIndex)
+      local trainDemolisherIndex = global.TD_data["trainDisassemblers"][trainDisassemblerNW.surface.index][trainDisassemblerNW.position.y][trainDisassemblerNW.position.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 206")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- add reference to the trainBuilder in the trainassembly
-      global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"] = trainBuilderIndex
+      global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndex
 
-      -- and add this trainAssembler reference to the existing trainBuilder
-      table.insert(global.TA_data["trainBuilders"][trainBuilderIndex], {
+      -- and add this trainDisassembler reference to the existing trainBuilder
+      table.insert(global.TD_data["trainDemolishers"][trainDemolisherIndex], {
         ["surfaceIndex"] = machineSurface.index,
         ["position"]     = { x = machinePosition.x, y = machinePosition.y },
       })
 
-    elseif (trainAssemblerSE and (not trainAssemblerNW)) then
+    elseif (trainDisassemblerSE and (not trainDisassemblerNW)) then
       -- OPTION 3c.2b: There is only one neighbour detected.
       --               Only the southeast one was detected, we add it to his
       --               trainbuilder.
-      local trainBuilderIndex = global.TA_data["trainAssemblers"][trainAssemblerSE.surface.index][trainAssemblerSE.position.y][trainAssemblerSE.position.x]["trainBuilderIndex"]
-      Traincontroller:onTrainbuilderAltered(trainBuilderIndex)
+      local trainDemolisherIndex = global.TD_data["trainDisassemblers"][trainDisassemblerSE.surface.index][trainDisassemblerSE.position.y][trainDisassemblerSE.position.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 223")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- add reference to the trainBuilder in the trainassembly
-      global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"] = trainBuilderIndex
+      global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndex
 
-      -- and add this trainAssembler reference to the existing trainBuilder
-      table.insert(global.TA_data["trainBuilders"][trainBuilderIndex], {
+      -- and add this trainDisassembler reference to the existing trainBuilder
+      table.insert(global.TD_data["trainDemolishers"][trainDemolisherIndex], {
         ["surfaceIndex"] = machineSurface.index,
         ["position"]     = { x = machinePosition.x, y = machinePosition.y },
       })
 
     else
       -- OPTION 3c.3: Both neighbours are detected
-      --              First we need to merge the two existing trainBuilders
+      --              First we need to merge the two existing trainDemolishers
       --              together. Let's merge the SE one inside the NW one
-      local trainBuilderIndexNW = global.TA_data["trainAssemblers"][trainAssemblerNW.surface.index][trainAssemblerNW.position.y][trainAssemblerNW.position.x]["trainBuilderIndex"]
-      local trainBuilderIndexSE = global.TA_data["trainAssemblers"][trainAssemblerSE.surface.index][trainAssemblerSE.position.y][trainAssemblerSE.position.x]["trainBuilderIndex"]
-      Traincontroller:onTrainbuilderAltered(trainBuilderIndexNW)
-      Traincontroller:onTrainbuilderAltered(trainBuilderIndexSE)
+      local trainDemolisherIndexNW = global.TD_data["trainDisassemblers"][trainDisassemblerNW.surface.index][trainDisassemblerNW.position.y][trainDisassemblerNW.position.x]["trainDemolisherIndex"]
+      local trainDemolisherIndexSE = global.TD_data["trainDisassemblers"][trainDisassemblerSE.surface.index][trainDisassemblerSE.position.y][trainDisassemblerSE.position.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 241")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndexNW)
+      game.print("TODO: TrainDisassembler line 243")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndexSE)
 
-      for trainAssemblerIndex, trainAssemblerRef in pairs(global.TA_data["trainBuilders"][trainBuilderIndexSE]) do
+      for trainDisassemblerIndex, trainDisassemblerRef in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndexSE]) do
         -- Move the reference into the other trainBuilder
-        table.insert(global.TA_data["trainBuilders"][trainBuilderIndexNW], util.table.deepcopy(trainAssemblerRef))
+        table.insert(global.TD_data["trainDemolishers"][trainDemolisherIndexNW], util.table.deepcopy(trainDisassemblerRef))
       end
 
       -- Now all the assemblers of the SE one are in the NW one, we can now delete
@@ -252,38 +254,38 @@ function Trainassembly:saveNewStructure(machineEntity, machineRenderID)
       -- is already the last one, we don't have this issue. And when we move the're
       -- is a possibility we moved the NW over. We've also deleted a trainbuiler,
       -- so we'll have to update our nextIndex - 1.
-      local lastIndex = global.TA_data["nextTrainBuilderIndex"] - 1
+      local lastIndex = global.TD_data["nextTrainDemolisherIndex"] - 1
 
       -- check if its the last one, if not the last one we fill the hole of the SE one
-      if (trainBuilderIndexSE ~= lastIndex) then
+      if (trainDemolisherIndexSE ~= lastIndex) then
         -- copy the last one over to the hole and adapt all the references to the
-        -- trianBuilder of all the trainAssemblers we moved
-        global.TA_data["trainBuilders"][trainBuilderIndexSE] = util.table.deepcopy(global.TA_data["trainBuilders"][lastIndex])
-        for _, trainAssemblerRef in pairs(global.TA_data["trainBuilders"][trainBuilderIndexSE]) do
-          global.TA_data["trainAssemblers"][trainAssemblerRef.surfaceIndex][trainAssemblerRef.position.y][trainAssemblerRef.position.x]["trainBuilderIndex"] = trainBuilderIndexSE
+        -- trianBuilder of all the trainDisassemblers we moved
+        global.TD_data["trainDemolishers"][trainDemolisherIndexSE] = util.table.deepcopy(global.TD_data["trainDemolishers"][lastIndex])
+        for _, trainDisassemblerRef in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndexSE]) do
+          global.TD_data["trainDisassemblers"][trainDisassemblerRef.surfaceIndex][trainDisassemblerRef.position.y][trainDisassemblerRef.position.x]["trainDemolisherIndex"] = trainDemolisherIndexSE
         end
 
         -- it could be the other one we moved
-        if trainBuilderIndexNW == lastIndex then
-          trainBuilderIndexNW = trainBuilderIndexSE
+        if trainDemolisherIndexNW == lastIndex then
+          trainDemolisherIndexNW = trainDemolisherIndexSE
         end
       end
 
       -- delete the reference of the last index
-      global.TA_data["trainBuilders"][lastIndex] = nil
-      global.TA_data["nextTrainBuilderIndex"] = lastIndex
+      global.TD_data["trainDemolishers"][lastIndex] = nil
+      global.TD_data["nextTrainDemolisherIndex"] = lastIndex
 
-      -- and add this trainAssembler reference to that existing trainBuilder
-      table.insert(global.TA_data["trainBuilders"][trainBuilderIndexNW], {
+      -- and add this trainDisassembler reference to that existing trainBuilder
+      table.insert(global.TD_data["trainDemolishers"][trainDemolisherIndexNW], {
         ["surfaceIndex"] = machineSurface.index,
         ["position"]     = { x = machinePosition.x, y = machinePosition.y },
       })
 
       -- now we finaly merged them both together and added the new assembler, now
       -- we can start updating the reference in the trainassembly to the trainbuilders
-      --global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"] = trainBuilderIndexNW
-      for _, trainAssemblerRef in pairs(global.TA_data["trainBuilders"][trainBuilderIndexNW]) do
-        global.TA_data["trainAssemblers"][trainAssemblerRef.surfaceIndex][trainAssemblerRef.position.y][trainAssemblerRef.position.x]["trainBuilderIndex"] = trainBuilderIndexNW
+      --global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"] = trainDemolisherIndexNW
+      for _, trainDisassemblerRef in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndexNW]) do
+        global.TD_data["trainDisassemblers"][trainDisassemblerRef.surfaceIndex][trainDisassemblerRef.position.y][trainDisassemblerRef.position.x]["trainDemolisherIndex"] = trainDemolisherIndexNW
       end
     end
   end
@@ -292,7 +294,7 @@ end
 
 
 
-function Trainassembly:deleteBuilding(machineEntity)
+function TrainDisassembly:deleteBuilding(machineEntity)
 
   --Step 1: check if the machineEntity is valid.
   if not (machineEntity and machineEntity.valid) then
@@ -302,11 +304,11 @@ function Trainassembly:deleteBuilding(machineEntity)
   local machinePosition = machineEntity.position
 
   --Step 2a: check what direction it is facing (vertical or horizontal)
-  local trainAssemblerNW, trainAssemblerSE
+  local trainDisassemblerNW, trainDisassemblerSE
   if machineEntity.direction == defines.direction.north or machineEntity.direction == defines.direction.south then
     -- machine is placed vertical, look vertical (y-axis)
     -- north
-    trainAssemblerNW = machineSurface.find_entities_filtered{
+    trainDisassemblerNW = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -314,7 +316,7 @@ function Trainassembly:deleteBuilding(machineEntity)
       limit    = 1,
     }
     -- south
-    trainAssemblerSE = machineSurface.find_entities_filtered{
+    trainDisassemblerSE = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -324,7 +326,7 @@ function Trainassembly:deleteBuilding(machineEntity)
   else
     -- machine is placed horizontal, look horizontal (x-axis)
     -- west
-    trainAssemblerNW = machineSurface.find_entities_filtered{
+    trainDisassemblerNW = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -332,7 +334,7 @@ function Trainassembly:deleteBuilding(machineEntity)
       limit    = 1,
     }
     -- east
-    trainAssemblerSE = machineSurface.find_entities_filtered{
+    trainDisassemblerSE = machineSurface.find_entities_filtered{
       name     = machineEntity.name,
       type     = machineEntity.type,
       force    = machineEntity.force,
@@ -343,97 +345,101 @@ function Trainassembly:deleteBuilding(machineEntity)
 
   -- find_entities_filtered returns a list, we want only the entity,
   -- so we get it out of the table. Also make sure it is valid
-  if not LSlib.utils.table.isEmpty(trainAssemblerNW) then
-    trainAssemblerNW = trainAssemblerNW[1]
-    if not trainAssemblerNW.valid then
-      trainAssemblerNW = nil
+  if not LSlib.utils.table.isEmpty(trainDisassemblerNW) then
+    trainDisassemblerNW = trainDisassemblerNW[1]
+    if not trainDisassemblerNW.valid then
+      trainDisassemblerNW = nil
     end
   else
-    trainAssemblerNW = nil
+    trainDisassemblerNW = nil
   end
-  if not LSlib.utils.table.isEmpty(trainAssemblerSE) then
-    trainAssemblerSE = trainAssemblerSE[1]
-    if not trainAssemblerSE.valid then
-      trainAssemblerSE = nil
+  if not LSlib.utils.table.isEmpty(trainDisassemblerSE) then
+    trainDisassemblerSE = trainDisassemblerSE[1]
+    if not trainDisassemblerSE.valid then
+      trainDisassemblerSE = nil
     end
   else
-    trainAssemblerSE = nil
+    trainDisassemblerSE = nil
   end
 
   -- STEP 2b: We found some entities now (maybe), but we still have to check if
   --          they are validly placed. If they aren't valid, we discard them too
   --          Validly placed item: - has same or oposite direction
-  if trainAssemblerNW and trainAssemblerNW.valid then
+  if trainDisassemblerNW and trainDisassemblerNW.valid then
     -- Check if its facing the same or oposite direction, if not, discard.
-    if not (trainAssemblerNW.direction == machineEntity.direction
-            or trainAssemblerNW.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
-      trainAssemblerNW = nil
+    if not (trainDisassemblerNW.direction == machineEntity.direction
+            or trainDisassemblerNW.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
+      trainDisassemblerNW = nil
     end
   end
-  if trainAssemblerSE and trainAssemblerSE.valid then
+  if trainDisassemblerSE and trainDisassemblerSE.valid then
     -- Check if its facing the same or oposite direction, if not, discard.
-    if not (trainAssemblerSE.direction == machineEntity.direction
-            or trainAssemblerSE.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
-      trainAssemblerSE = nil
+    if not (trainDisassemblerSE.direction == machineEntity.direction
+            or trainDisassemblerSE.direction == LSlib.utils.directions.oposite(machineEntity.direction) ) then
+      trainDisassemblerSE = nil
     end
   end
 
   -- STEP 2c: Now that we found the entities, we can start updating the trainBuilder
-  if (not trainAssemblerNW) and (not trainAssemblerSE) then
-    local trainBuilderIndex = global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"]
-    Traincontroller:onTrainbuilderAltered(trainBuilderIndex)
+  if (not trainDisassemblerNW) and (not trainDisassemblerSE) then
+    local trainDemolisherIndex = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 386")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
-    global.TA_data["trainBuilders"][trainBuilderIndex] = nil
-    local lastTrainBuilderIndex = global.TA_data["nextTrainBuilderIndex"] - 1
+    global.TD_data["trainDemolishers"][trainDemolisherIndex] = nil
+    local lastTrainBuilderIndex = global.TD_data["nextTrainDemolisherIndex"] - 1
 
-    if trainBuilderIndex ~= lastTrainBuilderIndex then
-      global.TA_data["trainBuilders"][trainBuilderIndex] = util.table.deepcopy(global.TA_data["trainBuilders"][lastTrainBuilderIndex])
+    if trainDemolisherIndex ~= lastTrainBuilderIndex then
+      global.TD_data["trainDemolishers"][trainDemolisherIndex] = util.table.deepcopy(global.TD_data["trainDemolishers"][lastTrainBuilderIndex])
 
-      -- update all the trainAssemblers
-      for _, location in pairs(global.TA_data["trainBuilders"][trainBuilderIndex]) do
-        global.TA_data["trainAssemblers"][location["surfaceIndex"]][location["position"].y][location["position"].x]["trainBuilderIndex"] = trainBuilderIndex
+      -- update all the trainDisassemblers
+      for _, location in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndex]) do
+        global.TD_data["trainDisassemblers"][location["surfaceIndex"]][location["position"].y][location["position"].x]["trainDemolisherIndex"] = trainDemolisherIndex
       end
 
     end
 
-    global.TA_data["nextTrainBuilderIndex"] = lastTrainBuilderIndex
+
+    global.TD_data["nextTrainDemolisherIndex"] = lastTrainBuilderIndex
 
   else -- there is one or more neighbours
 
-    if (trainAssemblerNW and (not trainAssemblerSE)) or (trainAssemblerSE and (not trainAssemblerNW)) then -- only one neighbour
+    if (trainDisassemblerNW and (not trainDisassemblerSE)) or (trainDisassemblerSE and (not trainDisassemblerNW)) then -- only one neighbour
 
-    local trainBuilderIndex = global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"]
-    Traincontroller:onTrainbuilderAltered(trainBuilderIndex)
-
-    -- delete the assembler out of the trainbuilder
-    for locationIndex, location in pairs(global.TA_data["trainBuilders"][trainBuilderIndex]) do
-      if location["surfaceIndex"] == machineSurface.index and location["position"].y == machinePosition.y and location["position"].x == machinePosition.x then
-        table.remove(global.TA_data["trainBuilders"][trainBuilderIndex], locationIndex)
-        break
-      end
-    end
-
-    else -- there are two neighbours
-
-      local trainBuilderIndex  = global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"]
-      Traincontroller:onTrainbuilderAltered(trainBuilderIndex)
-      local newTrainBuilderIndex = global.TA_data["nextTrainBuilderIndex"]
-      global.TA_data["trainBuilders"][newTrainBuilderIndex] = {}
-
-      local builderIsVertical = false
-      if trainAssemblerNW.direction == defines.direction.north then
-        builderIsVertical = true
-      end
+      local trainDemolisherIndex = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 412")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
 
       -- delete the assembler out of the trainbuilder
-      for locationIndex, location in pairs(global.TA_data["trainBuilders"][trainBuilderIndex]) do
+      for locationIndex, location in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndex]) do
         if location["surfaceIndex"] == machineSurface.index and location["position"].y == machinePosition.y and location["position"].x == machinePosition.x then
-          table.remove(global.TA_data["trainBuilders"][trainBuilderIndex], locationIndex)
+          table.remove(global.TD_data["trainDemolishers"][trainDemolisherIndex], locationIndex)
           break
         end
       end
 
-      for locationIndex, location in pairs(global.TA_data["trainBuilders"][trainBuilderIndex]) do
+    else -- there are two neighbours
+
+      local trainDemolisherIndex  = global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
+      game.print("TODO: TrainDisassembler line 426")
+      --Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
+      local newTrainBuilderIndex = global.TD_data["nextTrainDemolisherIndex"]
+      global.TD_data["trainDemolishers"][newTrainBuilderIndex] = {}
+
+      local builderIsVertical = false
+      if trainDisassemblerNW.direction == defines.direction.north then
+        builderIsVertical = true
+      end
+
+      -- delete the assembler out of the trainbuilder
+      for locationIndex, location in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndex]) do
+        if location["surfaceIndex"] == machineSurface.index and location["position"].y == machinePosition.y and location["position"].x == machinePosition.x then
+          table.remove(global.TD_data["trainDemolishers"][trainDemolisherIndex], locationIndex)
+          break
+        end
+      end
+      
+      for locationIndex, location in pairs(global.TD_data["trainDemolishers"][trainDemolisherIndex]) do
         local needToMove = false
 
         if builderIsVertical then
@@ -447,24 +453,24 @@ function Trainassembly:deleteBuilding(machineEntity)
         end
 
         if needToMove then --moving assemblers over to different builder
-          table.insert(global.TA_data["trainBuilders"][newTrainBuilderIndex], util.table.deepcopy(global.TA_data["trainBuilders"][trainBuilderIndex][locationIndex])) --copy over to different builder
-          global.TA_data["trainBuilders"][trainBuilderIndex][locationIndex] = nil --delete the old one
-          global.TA_data["trainAssemblers"][location["surfaceIndex"]][location["position"].y][location["position"].x]["trainBuilderIndex"] = newTrainBuilderIndex --adjusting trainbuilderindex in assembler
+          table.insert(global.TD_data["trainDemolishers"][newTrainBuilderIndex], util.table.deepcopy(global.TD_data["trainDemolishers"][trainDemolisherIndex][locationIndex])) --copy over to different builder
+          global.TD_data["trainDemolishers"][trainDemolisherIndex][locationIndex] = nil --delete the old one
+          global.TD_data["trainDisassemblers"][location["surfaceIndex"]][location["position"].y][location["position"].x]["trainDemolisherIndex"] = newTrainBuilderIndex --adjusting trainbuilderindex in assembler
         end
       end
 
-      global.TA_data["nextTrainBuilderIndex"] = newTrainBuilderIndex + 1
+      global.TD_data["nextTrainDemolisherIndex"] = newTrainBuilderIndex + 1
     end
   end
 
-  -- STEP 3: Deleting the trainAssembler
-  global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] = nil
+  -- STEP 3: Deleting the trainDisassembler
+  global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] = nil
 
-  if LSlib.utils.table.isEmpty(global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y]) then
-    global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] = nil
+  if LSlib.utils.table.isEmpty(global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y]) then
+    global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] = nil
 
-    if LSlib.utils.table.isEmpty(global.TA_data["trainAssemblers"][machineSurface.index]) then
-      global.TA_data["trainAssemblers"][machineSurface.index] = nil
+    if LSlib.utils.table.isEmpty(global.TD_data["trainDisassemblers"][machineSurface.index]) then
+      global.TD_data["trainDisassemblers"][machineSurface.index] = nil
     end
   end
 
@@ -472,85 +478,47 @@ end
 
 
 
-function Trainassembly:updateMachineDirection(machineEntity)
+function TrainDisassembly:updateMachineDirection(machineEntity)
 
   if not (machineEntity and machineEntity.valid) then
     return nil
   end
   local machineSurface  = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index] then
     return nil
   end
   local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
     return nil
   end
 
-  global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["direction"] = machineEntity.direction
+  global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["direction"] = machineEntity.direction
 
 end
 
 
 
-function Trainassembly:setMachineTint(machineEntity, tintColor)
-
-  if not (machineEntity and machineEntity.valid) then
-    return nil
-  end
-  local machineSurface  = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
-    return nil
-  end
-  local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
-    return nil
-  end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
-    return nil
-  end
-
-  global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainColor"] = {
-    r = tintColor.r or 0,
-    g = tintColor.g or 0,
-    b = tintColor.b or 0,
-  }
-
-end
-
-
-
-function Trainassembly:setCreatedEntity(machineSurfaceIndex, machinePosition, createdEntity)
+function TrainDisassembly:setRemovedEntity(machineSurfaceIndex, machinePosition, removedEntity)
   -- STEP 1: If we don't have a trainBuilder saved on that surface, or not
   --         on that y position or on that x position, it means that we don't
   --         have a entity available for that location.
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex] then
     return false
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y] then
     return false
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
     return false
   end
 
   -- STEP 2: In step 1 we checked for an invalid data structure. So now we
   --         can return the entity on this location.
-  global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["createdEntity"] = createdEntity
+  global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["removedEntity"] = removedEntity
   return true
-end
-
-
-
-function Trainassembly:deleteCreatedTrainEntity(machineSurfaceIndex, machinePosition)
-  -- delete the createdEntity from a trainBuilder
-  local createdTrainEntity = self:getCreatedEntity(machineSurfaceIndex, machinePosition)
-  if createdTrainEntity and createdTrainEntity.valid then
-    createdTrainEntity.destroy()
-    self:setCreatedEntity(machineSurfaceIndex, machinePosition, nil)
-  end
 end
 
 
@@ -558,52 +526,52 @@ end
 --------------------------------------------------------------------------------
 -- Getter functions to extract data from the data structure
 --------------------------------------------------------------------------------
-function Trainassembly:getItemName()
-  return global.TA_data.prototypeData.itemName
+function TrainDisassembly:getItemName()
+  return global.TD_data.prototypeData.itemName
 end
 
 
 
-function Trainassembly:getPlaceableEntityName()
-  return global.TA_data.prototypeData.placeableName
+function TrainDisassembly:getPlaceableEntityName()
+  return global.TD_data.prototypeData.placeableName
 end
 
 
 
-function Trainassembly:getMachineEntityName()
-  return global.TA_data.prototypeData.machineName
+function TrainDisassembly:getMachineEntityName()
+  return global.TD_data.prototypeData.machineName
 end
 
 
 
-function Trainassembly:isRollingStock(entity)
-  return entity and entity.valid and global.TA_data.prototypeData.rollingStock[entity.type] or false
+function TrainDisassembly:isRollingStock(entity)
+  return entity and entity.valid and global.TD_data.prototypeData.rollingStock[entity.type] or false
 end
 
 
 
-function Trainassembly:getMachineEntity(machineSurfaceIndex, machinePosition)
+function TrainDisassembly:getMachineEntity(machineSurfaceIndex, machinePosition)
   -- STEP 1: If we don't have a trainBuilder saved on that surface, or not
   --         on that y position or on that x position, it means that we don't
   --         have a entity available for that location.
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
     return nil
   end
 
   -- STEP 2: In step 1 we checked for an invalid data structure. So now we
   --         can return the entity on this location.
-  return global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["entity"]
+  return global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["entity"]
 end
 
 
 
-function Trainassembly:getMachineDirection(machineEntity)
+function TrainDisassembly:getMachineDirection(machineEntity)
   -- STEP 1: If the machineEntity isn't valid, its position isn't valid either
   if not (machineEntity and machineEntity.valid) then
     return nil
@@ -613,25 +581,25 @@ function Trainassembly:getMachineDirection(machineEntity)
   --         on that y position or on that x position, it means that we don't
   --         have a direction available for that machine.
   local machineSurface = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index] then
     return nil
   end
   local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
     return nil
   end
 
   -- STEP 3: In step 2 we checked for an invalid data structure. So now we
   --         can return the direction the machine is/was facing.
-  return global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["direction"]
+  return global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["direction"]
 end
 
 
 
-function Trainassembly:getMachineRenderID(machineEntity)
+function TrainDisassembly:getMachineRenderIDs(machineEntity)
   -- STEP 1: If the machineEntity isn't valid, its position isn't valid either
   if not (machineEntity and machineEntity.valid) then
     return nil
@@ -641,74 +609,46 @@ function Trainassembly:getMachineRenderID(machineEntity)
   --         on that y position or on that x position, it means that we don't
   --         have a direction available for that machine.
   local machineSurface = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index] then
     return nil
   end
   local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
     return nil
   end
 
   -- STEP 3: In step 2 we checked for an invalid data structure. So now we
   --         can return the direction the machine is/was facing.
-  return global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["renderID"]
+  return global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["renderID"]
 end
 
 
 
-function Trainassembly:getMachineTint(machineEntity)
-  -- STEP 1: If the machineEntity isn't valid, its position isn't valid either
-  if not (machineEntity and machineEntity.valid) then
-    return nil
-  end
-
-  -- STEP 2: If we don't have a trainBuilder saved on that surface, or not
-  --         on that y position or on that x position, it means that we don't
-  --         have a direction available for that machine.
-  local machineSurface = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
-    return nil
-  end
-  local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
-    return nil
-  end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
-    return nil
-  end
-
-  -- STEP 3: In step 2 we checked for an invalid data structure. So now we
-  --         can return the direction the machine is/was facing.
-  return global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainColor"]
-end
-
-
-
-function Trainassembly:getCreatedEntity(machineSurfaceIndex, machinePosition)
+function TrainDisassembly:getRemovedEntity(machineSurfaceIndex, machinePosition)
   -- STEP 1: If we don't have a trainBuilder saved on that surface, or not
   --         on that y position or on that x position, it means that we don't
   --         have a entity available for that location.
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x] then
     return nil
   end
 
   -- STEP 2: In step 1 we checked for an invalid data structure. So now we
   --         can return the entity on this location.
-  return global.TA_data["trainAssemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["createdEntity"]
+  return global.TD_data["trainDisassemblers"][machineSurfaceIndex][machinePosition.y][machinePosition.x]["removedEntity"]
 end
 
 
 
-function Trainassembly:getTrainBuilderIndex(machineEntity)
+function TrainDisassembly:getTrainDemolisherIndex(machineEntity)
   -- STEP 1: If the machineEntity isn't valid, its position isn't valid either
   if not (machineEntity and machineEntity.valid) then
     return nil
@@ -716,37 +656,37 @@ function Trainassembly:getTrainBuilderIndex(machineEntity)
 
   -- STEP 2: If we don't have a trainBuilder saved on that surface, or not
   --         on that y position or on that x position, it means that we don't
-  --         have a trainBuilderIndex available for that machine.
+  --         have a trainDemolisherIndex available for that machine.
   local machineSurface = machineEntity.surface
-  if not global.TA_data["trainAssemblers"][machineSurface.index] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index] then
     return nil
   end
   local machinePosition = machineEntity.position
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y] then
     return nil
   end
-  if not global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
+  if not global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x] then
     return nil
   end
 
   -- STEP 3: In step 2 we checked for an invalid data structure. So now we
-  --         can return the trainBuilderIndex of the machine.
-  return global.TA_data["trainAssemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainBuilderIndex"]
+  --         can return the trainDemolisherIndex of the machine.
+  return global.TD_data["trainDisassemblers"][machineSurface.index][machinePosition.y][machinePosition.x]["trainDemolisherIndex"]
 end
 
 
 
-function Trainassembly:getTrainBuilder(trainBuilderIndex)
+function TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
   --step 1: Make sure there is a valid index
-  if not trainBuilderIndex then return nil end
+  if not trainDemolisherIndex then return nil end
 
-  --step 2: In this step we return the trainBuilders with the trainBuilderIndex.
-  return global.TA_data["trainBuilders"][trainBuilderIndex]
+  --step 2: In this step we return the trainDemolishers with the trainDemolisherIndex.
+  return global.TD_data["trainDemolishers"][trainDemolisherIndex]
 end
 
 
 
-function Trainassembly:getTrainBuilderIterator(dir)
+function TrainDisassembly:getTrainDemolisherIterator(dir)
   return function(t)
     -- Ordered table iterator, allow to iterate in the order that the trainBuilder
     -- connects the train together. Equivalent of the pairs() function on tables.
@@ -828,21 +768,7 @@ end
 
 
 
-function Trainassembly:getTrainTint(trainEntityName)
-  if not global.TA_data.prototypeData.trainTint[trainEntityName] then
-    -- value not cached yet
-    local entityPrototype = game.entity_prototypes[trainEntityName]
-    if not entityPrototype then return {} end
-
-    global.TA_data.prototypeData.trainTint[trainEntityName] = entityPrototype.color or {}
-  end
-
-  return global.TA_data.prototypeData.trainTint[trainEntityName]
-end
-
-
-
-function Trainassembly:checkValidPlacement(createdEntity, playerIndex)
+function TrainDisassembly:checkValidPlacement(createdEntity, playerIndex)
   -- Checks the correct placement of the trainassembler, if not validly placed,
   -- it will inform the player with the corresponding message and return the
   -- trainassembler to the player. If no player is found, it will drop the
@@ -942,7 +868,7 @@ end
 -- Behaviour functions, mostly event handlers
 --------------------------------------------------------------------------------
 -- When a player builds a new entity
-function Trainassembly:onBuildEntity(createdEntity, playerIndex)
+function TrainDisassembly:onBuildEntity(createdEntity, playerIndex)
   -- The player created a new entity, the player can only place the placeable item.
   -- So we have to check if the player placed this entity, if so, we remove it.
   -- We manualy have to build a machine entity on the same spot.
@@ -981,21 +907,28 @@ function Trainassembly:onBuildEntity(createdEntity, playerIndex)
         railEntity.minable      = false -- entity can't be mined
       end
 
-      local machineRenderID = rendering.draw_animation{
-        animation = machineEntity.name .. "-" .. LSlib.utils.directions.toString(machineEntity.direction),
+      local machineRenderID = {}
+      for animationLayer,renderLayer in pairs{
+        ["base"] = 124,
         -- @Bilka said:
         -- "item-in-inserter-hand" = 134
         -- "higher-object-above"   = 132
-        render_layer = 133,
-        target = machineEntity,
-        surface = machineEntity.surface,
-      }
+        ["overlay"] = 133
+      } do
+        machineRenderID[animationLayer] = rendering.draw_animation{
+          animation = machineEntity.name .. "-" .. LSlib.utils.directions.toString(machineEntity.direction) .. "-" .. animationLayer,
+          render_layer = tostring(renderLayer),
+          target = machineEntity,
+          surface = machineEntity.surface,
+        }
+      end
 
       -- STEP 4: delete the locomotive that was build.
       createdEntity.destroy()
 
       -- STEP 5: Save the newly made trainassembly to our data structure so we can keep track of it
       self:saveNewStructure(machineEntity, machineRenderID)
+      game.print(serpent.line(global.TD_data["trainDisassemblers"]))
     end
 
   elseif createdEntity.name == "straight-rail" then
@@ -1009,32 +942,20 @@ function Trainassembly:onBuildEntity(createdEntity, playerIndex)
       createdEntity.destroy()
       game.players[playerIndex].insert{name="rail", count=1}
     end
-
-  elseif self:isRollingStock(createdEntity) then
-    if game.active_mods["MultipleUnitTrainControl"] and string.sub(createdEntity.name, -3) == "-mu" and
-      createdEntity.surface.count_entities_filtered{
-        name     = self:getMachineEntityName(),
-        position = createdEntity.position,
-        force    = createdEntity.force,
-        limit    = 1,
-      } > 0 then
-      self:setCreatedEntity(createdEntity.surface.index, createdEntity.position, createdEntity)
-    end
   end
 end
 
+
+
 -- When a player/robot removes the building
-function Trainassembly:onRemoveEntity(removedEntity)
+function TrainDisassembly:onRemoveEntity(removedEntity)
   -- In some way the building got removed. This results in that the builder is
   -- removed. This also means we have to delete the train that was in this spot.
   --
-  -- Player experience: Everything with the trainAssembler gets removed
+  -- Player experience: Everything with the trainDisassembler gets removed
   if removedEntity.name == self:getMachineEntityName() then
     local entityPosition = removedEntity.position
     local entitySurface  = removedEntity.surface
-
-    -- STEP 1: If the building created a train already, we need to delete it as well
-    self:deleteCreatedTrainEntity(entitySurface.index, entityPosition)
 
     -- STEP 2: make the rails underneath minable again
     for _,railEntity in pairs(entitySurface.find_entities_filtered{
@@ -1052,6 +973,7 @@ function Trainassembly:onRemoveEntity(removedEntity)
 
     -- STEP 3: Update the data structure
     self:deleteBuilding(removedEntity)
+    game.print(serpent.line(global.TD_data["trainDisassemblers"]))
 
   elseif self:isRollingStock(removedEntity) then
     if removedEntity.surface.count_entities_filtered{
@@ -1060,7 +982,8 @@ function Trainassembly:onRemoveEntity(removedEntity)
       force    = removedEntity.force,
       limit    = 1,
     } > 0 then
-      self:setCreatedEntity(removedEntity.surface.index, removedEntity.position, nil)
+      self:setRemovedEntity(removedEntity.surface.index, removedEntity.position, nil)
+      game.print("TODO: Clear furnace content (+active recipe) TrainDsassembly line 993")
     end
   end
 end
@@ -1068,7 +991,7 @@ end
 
 
 -- Called after an entity dies.
-function Trainassembly:onGhostBuild(removedEntityPrototype, ghostEntity)
+function TrainDisassembly:onGhostBuild(removedEntityPrototype, ghostEntity)
   -- When the building gets removed, it can make a ghost so the bots will come
   -- replace it.
   if ghostEntity and removedEntityPrototype.name == self:getMachineEntityName() then
@@ -1085,7 +1008,7 @@ end
 
 
 -- When a player rotates an entity
-function Trainassembly:onPlayerRotatedEntity(rotatedEntity)
+function TrainDisassembly:onPlayerRotatedEntity(rotatedEntity)
   -- The player rotated the machine entity +/-90 degrees, the building can only be
   -- rotated on 180 degree angles. So we have to manualy rotate it another 90 degree.
   --
@@ -1095,25 +1018,13 @@ function Trainassembly:onPlayerRotatedEntity(rotatedEntity)
     local newDirection = LSlib.utils.directions.oposite(self:getMachineDirection(rotatedEntity))
 
     -- STEP 2: set the new rotated direction
+    local renderIDs = self:getMachineRenderIDs(rotatedEntity)
     rotatedEntity.direction = newDirection
-    rendering.set_animation(self:getMachineRenderID(rotatedEntity), rotatedEntity.name .. "-" .. LSlib.utils.directions.toString(newDirection))
+    for _,animationLayer in pairs{"base", "overlay"} do
+      rendering.set_animation(renderIDs[animationLayer], rotatedEntity.name .. "-" .. LSlib.utils.directions.toString(newDirection) .. "-" .. animationLayer)
+    end
 
     -- STEP 3: save the state to the data structure
     self:updateMachineDirection(rotatedEntity)
-
-    -- STEP 4: If the building created a train already, we need to rorate it as well
-    local createdTrainEntity = self:getCreatedEntity(rotatedEntity.surface.index, rotatedEntity.position)
-    if createdTrainEntity and createdTrainEntity.valid then
-      createdTrainEntity.rotate()
-    end
-  end
-end
-
-
-
-function Trainassembly:onPlayerChangedSettings(sourceEntity, destinationEntity)
-  if sourceEntity     .name == self:getMachineEntityName() and
-     destinationEntity.name == self:getMachineEntityName() then
-    self:setMachineTint(destinationEntity, self:getMachineTint(sourceEntity))
   end
 end
