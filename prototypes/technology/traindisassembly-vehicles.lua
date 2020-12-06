@@ -1,10 +1,14 @@
 
---making the cargo wagon technology and unlocking the wagon parts and fluid
+--making the cargo wagon disassembling technology
 
-local trainTechCargo = data.raw["technology"]["trainassembly-cargo-wagon"]
+local trainTechCargo = util.table.deepcopy(data.raw["technology"]["trainassembly-cargo-wagon"])
 
-table.insert(trainTechCargo.prerequisites, "traindisassembly-automated-train-disassembling")
+trainTechCargo.prerequisites = {trainTechCargo.name, "traindisassembly-automated-train-disassembling"}
+trainTechCargo.name = "traindisassembly-cargo-wagon"
+trainTechCargo.localised_name = {"technology-name.traindisassembly-cargo-wagon"}
+trainTechCargo.localised_description = {"technology-description.traindisassembly-cargo-wagon"}
 
+trainTechCargo.effects = {}
 for _, trainRecipe in pairs ({
   "cargo-wagon",
 }) do
@@ -17,12 +21,16 @@ end
 
 
 
---making the artillery wagon technology and unlocking the wagon parts and fluid
+--making the artillery wagon disassembling technology
 
-local trainTechArty = data.raw["technology"]["trainassembly-artillery-wagon"]
+local trainTechArty = util.table.deepcopy(data.raw["technology"]["trainassembly-artillery-wagon"])
 
-table.insert(trainTechArty.prerequisites, "traindisassembly-automated-train-disassembling")
+trainTechArty.prerequisites = {trainTechArty.name, trainTechCargo.name}
+trainTechArty.name = "traindisassembly-artillery-wagon"
+trainTechArty.localised_name = {"technology-name.traindisassembly-artillery-wagon"}
+trainTechArty.localised_description = {"technology-description.traindisassembly-artillery-wagon"}
 
+trainTechArty.effects = {}
 for _, trainRecipe in pairs ({
   "artillery-wagon",
 }) do
@@ -35,7 +43,7 @@ end
 
 
 
---making the locomotive fluid tech
+--making the locomotive disassembling tech
 
 for _, trainRecipe in pairs ({
   "locomotive",
@@ -51,24 +59,24 @@ end
 
 --making the fluid tech for fluid wagon
 
-for techName, techPrototype in pairs(data.raw["technology"]) do
-  if techPrototype.effects then
-    for techEffectIndex, techEffect in pairs(techPrototype.effects) do
-      if techEffect.type == "unlock-recipe" then
-        for _, wagonName in pairs({
-          "fluid-wagon",
-        }) do
-          if techEffect.recipe == wagonName then
-            table.insert(data.raw["technology"][techName].effects, techEffectIndex + 1,
-            {
-              type = "unlock-recipe",
-              recipe = wagonName .. "-parts[" .. wagonName .. "]",
-            })
-          end
-        end
-      end
-    end
-  end
+local trainTechFluid = util.table.deepcopy(data.raw["technology"]["fluid-wagon"])
+
+trainTechFluid.prerequisites = {trainTechFluid.name, "traindisassembly-cargo-wagon"}
+trainTechFluid.name = "traindisassembly-fluid-wagon"
+
+trainTechFluid.effects = {}
+for _, trainRecipe in pairs ({
+  "fluid-wagon",
+}) do
+   table.insert(trainTechFluid.effects,
+  {
+    type = "unlock-recipe",
+    recipe = trainRecipe .. "-parts[" .. trainRecipe .. "]",
+  })
 end
 
-table.insert(data.raw["technology"]["fluid-wagon"].prerequisites, "traindisassembly-automated-train-disassembling")
+data:extend{
+  trainTechCargo,
+  trainTechArty,
+  trainTechFluid
+}

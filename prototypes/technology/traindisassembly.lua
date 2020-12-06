@@ -1,6 +1,7 @@
 
 local trainTechDeconstructor = util.table.deepcopy(data.raw["technology"]["trainassembly-automated-train-assembling"])
 
+trainTechDeconstructor.prerequisites = {trainTechDeconstructor.name}
 trainTechDeconstructor.name = "traindisassembly-automated-train-disassembling"
 trainTechDeconstructor.effects = {}
 trainTechDeconstructor.localised_name = {"technology-name.trainTechDeconstructor"}
@@ -8,6 +9,7 @@ trainTechDeconstructor.localised_description = {"technology-description.trainTec
 
 
 
+trainTechDeconstructor.effects = {}
 for _, recipeName in pairs{
   "traindisassembly",
 } do

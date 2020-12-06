@@ -23,12 +23,9 @@ traincontrollerSignal.icon_size = traincontroller.icon_size
 traincontrollerSignal.icons = util.table.deepcopy(traincontroller.icons)
 traincontrollerSignal.icon_mipmaps = traincontroller.icon_mipmaps
 
-
 local traincontrollerMapview = util.table.deepcopy(data.raw["simple-entity-with-force"]["traincontroller-mapview"])
 
 traincontrollerMapview.name = traincontroller.name .. "-mapview"
-
-
 
 data:extend{
   traincontroller,

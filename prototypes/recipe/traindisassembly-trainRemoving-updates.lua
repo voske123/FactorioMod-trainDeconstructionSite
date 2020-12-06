@@ -1,7 +1,8 @@
 local itemOverride   = require("__trainConstructionSite__/prototypes/modded-trains-item-override")
+local recipeOverride = require("__trainConstructionSite__/prototypes/modded-trains-recipe-override")
 
 -- For each train-like entity we want to create a recipe so we can put this in
--- our trainbuilding to make an actual train on the tracks. To get the fluidname
+-- our traindisassembler to remove an actual train on the tracks. To get the fluidname
 -- we require the itemname. To aquire the itemname we get the entity.minable.result.
 -- For this we start to iterate over all tine train types
 local trainsToIgnore = require("__trainConstructionSite__/prototypes/modded-trains-to-ignore")
@@ -17,8 +18,9 @@ for _, trainType in pairs({
     if (not trainsToIgnore[trainType][trainEntity.name]) and trainEntity.minable and trainEntity.minable.result then
 
       local itemName = itemOverride[trainType][trainEntity.name] or trainEntity.minable.result
+      local item = data.raw["item-with-entity-data"][itemName] or data.raw["item"][itemName]
 
-      -- now that we have the itemname we can create the fluid recipe.
+      -- now that we have the itemname we can create the recipe.
       data:extend{
         {
           type = "recipe",
@@ -28,6 +30,8 @@ for _, trainType in pairs({
           normal =
           {
             enabled = false,
+            hide_from_stats = true,
+            hide_from_player_crafting = true,
             energy_required = 15,
             ingredients =
             {
@@ -41,10 +45,12 @@ for _, trainType in pairs({
             {
               {itemName, 1},
             },
+            main_product = itemName,
+            always_show_products = true,
           },
+          subgroup = "trainparts-parts",
         }
       }
-     
     end
   end
 end

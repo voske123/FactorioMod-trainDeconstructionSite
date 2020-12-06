@@ -6,16 +6,13 @@ traindisassembly.name  = "traindisassembly"
 traindisassembly.localised_name = {"item-name.traindisassembly"}
 traindisassembly.localised_description = {"item-description.traindisassembly"}
 
-traindisassembly.icon = "__trainDeconstructionSite__/graphics/placeholders/icon.png"
-traindisassembly.icons = nil
-traindisassembly.icon_size = 32
+--traindisassembly.icon = "__trainDeconstructionSite__/graphics/placeholders/icon.png"
+--traindisassembly.icons = nil
+--traindisassembly.icon_size = 32
 
-traindisassembly.order = "d[trainbuilder]-b[builder]"
+traindisassembly.order = "d[trainbuilder]-b[deconstruction]-a[builder]"
 
 traindisassembly.place_result = "traindisassembly-placeable" -- the name of the placable entity
-
-
-
 
 data:extend{
   traindisassembly,

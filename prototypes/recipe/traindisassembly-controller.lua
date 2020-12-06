@@ -9,5 +9,4 @@ trainControllerDisassembly.normal.results[1].name = "traincontroller-disassembly
 
 data:extend{
   trainControllerDisassembly,
-
 }
