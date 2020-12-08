@@ -97,6 +97,14 @@ end)
 
 
 
+
+script.on_event(defines.events.on_train_changed_state, function(event)
+  -- Called after a train changes state.
+  Traincontroller.Demolisher.Conductor:onTrainScheduleChanged(event.train)
+end)
+
+
+
 script.on_event(defines.events.on_gui_opened, function(event)
   -- Called when the player opens a GUI.
   --Traincontroller.Gui:onOpenEntity(event.entity, event.player_index)

@@ -3,7 +3,7 @@ require("__LSlib__/LSlib")
 
 -- Create class
 Traincontroller = {}
---require 'src.traincontroller-builder'
+require 'src.traincontroller-demolisher'
 --require 'src.traincontroller-gui'
 
 --------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ function Traincontroller:onInit()
   if not global.TC_data then
     global.TC_data = self:initGlobalData()
   end
-  --self.Builder:onInit()
+  self.Demolisher:onInit()
   --self.Gui    :onInit()
 end
 
@@ -22,14 +22,14 @@ end
 
 function Traincontroller:onLoad()
   -- Sync global state on multiplayer, make sure event handlers are set correctly
-  --self.Builder:onLoad()
+  self.Demolisher:onLoad()
 end
 
 
 
 function Traincontroller:onSettingChanged(event)
   -- called when a mod setting changed
-  --self.Builder:onSettingChanged(event)
+  self.Demolisher:onSettingChanged(event)
 end
 
 
@@ -91,14 +91,14 @@ function Traincontroller:saveNewStructure(controllerEntity, trainDemolisherIndex
   -- STEP 1b:Now we know we can index (without crashing) to the position as:
   --         dataStructure[surfaceIndex][positionY][positionX]
   --         Now we can store our wanted data at this position
-  game.print("TODO: builder status in controller line 128")
   global.TC_data["trainControllers"][controllerSurface.index][controllerPosition.y][controllerPosition.x] =
   {
     ["entity"]           = controllerEntity, -- the controller entity
     ["entity-hidden"]    = {}, -- the hidden entities
 
     ["trainDemolisherIndex"] = trainDemolisherIndex, -- the trainbuilder it controls
-    ["controllerStatus"] = "TODO",--global.TC_data.Builder["builderStates"]["initialState"], -- status
+    ["trainDemolishingPosition"] = nil, -- the position trains have to path to in order to be demolished
+    ["controllerStatus"] = global.TC_data.Demolisher["demolisherStates"]["initialState"], -- status
 
     -- list data
     ["prevController"]   = nil, -- the previous controller
@@ -118,8 +118,7 @@ function Traincontroller:saveNewStructure(controllerEntity, trainDemolisherIndex
     global.TC_data["trainControllers"][thisController["surfaceIndex"]][thisController["position"].y][thisController["position"].x]["nextController"] = util.table.deepcopy(thisController)
 
     -- STEP 2b: start on_tick events becose we need to start iterating
-    game.print("TODO: activate builder in controller line 149")
-    --self.Builder:activateOnTick()
+    self.Demolisher:activateOnTick()
   else
     -- when we've added it to the list, we know there is at least one in front
     -- of us. This one has a prev set. We add it inbetween.
@@ -153,6 +152,41 @@ function Traincontroller:saveNewStructure(controllerEntity, trainDemolisherIndex
       force     = controllerEntity.force
     }
   end
+
+  -- STEP 4: Find the trainDemolishingPosition
+  local controllerDirection = controllerEntity.direction
+  local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
+  local trainDemolishingPosition = trainDemolishers[1].position
+  if controllerDirection == defines.direction.north then
+    -- find builder with smallest Y value
+    for trainDemolisherIndex, trainDemolisherLocation in pairs(trainDemolishers) do
+      if trainDemolisherLocation.position.y < trainDemolishingPosition.y then
+        trainDemolishingPosition = trainDemolisherLocation.position
+      end
+    end
+  elseif controllerDirection == defines.direction.east then
+    -- find builder with largest X value
+    for trainDemolisherIndex, trainDemolisherLocation in pairs(trainDemolishers) do
+      if trainDemolisherLocation.position.x > trainDemolishingPosition.x then
+        trainDemolishingPosition = trainDemolisherLocation.position
+      end
+    end
+  elseif controllerDirection == defines.direction.south then
+    -- find builder with largest Y value
+    for trainDemolisherIndex, trainDemolisherLocation in pairs(trainDemolishers) do
+      if trainDemolisherLocation.position.y > trainDemolishingPosition.y then
+        trainDemolishingPosition = trainDemolisherLocation.position
+      end
+    end
+  else-- controllerDirection == defines.direction.west
+    -- find builder with smallest X value
+    for trainDemolisherIndex, trainDemolisherLocation in pairs(trainDemolishers) do
+      if trainDemolisherLocation.position.x < trainDemolishingPosition.x then
+        trainDemolishingPosition = trainDemolisherLocation.position
+      end
+    end
+  end
+  global.TC_data["trainControllers"][controllerSurface.index][controllerPosition.y][controllerPosition.x]["trainDemolishingPosition"] = util.table.deepcopy(trainDemolishingPosition)
 end
 
 
@@ -199,8 +233,7 @@ function Traincontroller:deleteController(controllerEntity)
     if LSlib.utils.table.areEqual(thisController, nextController) then
       global.TC_data["nextTrainControllerIterate"] = nil
       -- this is the last one, no need to keep iterating on_tick
-      game.print("TODO: deactivate builder in controller line 230")
-      --self.Builder:deactivateOnTick()
+      self.Demolisher:deactivateOnTick()
     else
       global.TC_data["nextTrainControllerIterate"] = util.table.deepcopy(nextController)
     end
@@ -329,6 +362,27 @@ function Traincontroller:getTrainDemolisherIndex(trainController)
 
   -- STEP 2: return the tainBuilderIndex
   return global.TC_data["trainControllers"][surfaceIndex][position.y][position.x]["trainDemolisherIndex"]
+end
+
+
+
+function Traincontroller:getTrainDemolishingPosition(trainController)
+  local surfaceIndex = trainController.surface.index
+  local position     = trainController.position
+  
+  -- STEP 1: make sure we can index the datastructure
+  if not global.TC_data["trainControllers"][surfaceIndex] then
+    return nil
+  end
+  if not global.TC_data["trainControllers"][surfaceIndex][position.y] then
+    return nil
+  end
+  if not global.TC_data["trainControllers"][surfaceIndex][position.y][position.x] then
+    return nil
+  end
+
+  -- STEP 2: return the trainDemolishingPosition
+  return global.TC_data["trainControllers"][surfaceIndex][position.y][position.x]["trainDemolishingPosition"]
 end
 
 
