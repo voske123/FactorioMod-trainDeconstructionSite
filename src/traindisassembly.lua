@@ -517,9 +517,11 @@ end
 
 
 function TrainDisassembly:cancelDemolishionOfEntity(machineSurfaceIndex, machinePosition)
-  game.print("TODO: cancel demolishion of entity")
-  -- only cancel when no demolishionEntity is registered to the data structure
-  -- TrainDisassembly:getRemovedEntity(machineSurfaceIndex, machinePosition)
+  if self:getRemovedEntity(machineSurfaceIndex, machinePosition) then
+    -- only cancel when a demolishionEntity is registered to the data structure
+    self:setRemovedEntity(machineSurfaceIndex, machinePosition, nil)
+    game.print("TODO: cancel demolishion of entity")
+  end
 end
 
 
@@ -983,7 +985,6 @@ function TrainDisassembly:onRemoveEntity(removedEntity)
       force    = removedEntity.force,
       limit    = 1,
     } > 0 then
-      self:setRemovedEntity(removedEntity.surface.index, removedEntity.position, nil)
       self:cancelDemolishionOfEntity(removedEntity.surface.index, removedEntity.position)
     end
   end

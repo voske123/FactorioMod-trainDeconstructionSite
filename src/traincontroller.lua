@@ -258,15 +258,6 @@ end
 
 
 
-function Traincontroller:cancelDemolishionOfTrain(trainDemolisherIndex)
-  -- delete the whole created train from a builder
-  for _, demolisherLocation in pairs(TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)) do
-    TrainDisassembly:cancelDemolishionOfEntity(demolisherLocation["surfaceIndex"], demolisherLocation["position"])
-  end
-end
-
-
-
 --------------------------------------------------------------------------------
 -- Getter functions to extract data from the data structure
 --------------------------------------------------------------------------------
@@ -367,6 +358,7 @@ end
 
 
 function Traincontroller:getTrainDemolishingPosition(trainController)
+  -- get the position the arriving trains have to aim for
   local surfaceIndex = trainController.surface.index
   local position     = trainController.position
   
@@ -383,6 +375,25 @@ function Traincontroller:getTrainDemolishingPosition(trainController)
 
   -- STEP 2: return the trainDemolishingPosition
   return global.TC_data["trainControllers"][surfaceIndex][position.y][position.x]["trainDemolishingPosition"]
+end
+
+
+
+function Traincontroller:getTrainControllerRailPosition(trainDemolishingIndex)
+  -- return position of the rail attached to the traincontroller
+  local trainController = self:getTrainController(trainDemolishingIndex)
+  local position     = trainController.position
+  local direction    = trainController.direction
+
+  if direction == defines.direction.north then
+    return {position.x - 2, position.y}
+  elseif direction == defines.direction.east then
+    return {position.x, position.y - 2}
+  elseif direction == defines.direction.south then
+    return {position.x + 2, position.y}
+  else-- direction == defines.direction.west
+    return {position.x, position.y + 2}
+  end
 end
 
 
@@ -666,6 +677,7 @@ function Traincontroller:onBuildEntity(createdEntity, playerIndex)
     local validPlacement, trainDemolisherIndex = self:checkValidPlacement(createdEntity, playerIndex)
     if validPlacement then -- It is valid, now we have to add the entity to the list
       self:saveNewStructure(createdEntity, trainDemolisherIndex)
+      self.Demolisher:activateDemolisher(trainDemolisherIndex)
 
       -- after structure is saved, we rename it, this will trigger Traincontroller:onRenameEntity as well
       createdEntity.backer_name = "Unnamed Traindemolisher"
@@ -685,7 +697,7 @@ function Traincontroller:onRemoveEntity(removedEntity)
     -- STEP 1: remove the created train
     local trainDemolisherIndex = self:getTrainDemolisherIndex(removedEntity)
     if trainDemolisherIndex then
-      self:cancelDemolishionOfTrain(trainDemolisherIndex)
+      self.Demolisher:cancelDemolishionOfTrain(trainDemolisherIndex)
     end
 
     -- STEP 2: Update the data structure
@@ -701,7 +713,7 @@ function Traincontroller:onTrainbuilderAltered(trainDemolisherIndex)
   local trainController = self:getTrainController(trainDemolisherIndex)
   if trainController then
     -- remove the created train
-    self:cancelDemolishionOfTrain(trainDemolisherIndex)
+    self.Demolisher:cancelDemolishionOfTrain(trainDemolisherIndex)
 
     -- delete from structure
     self:deleteController(trainController)

@@ -45,6 +45,7 @@ function Traincontroller.Demolisher.Conductor:addArrivingTrain(trainEntity, trai
   table.insert(global.TC_data.Demolisher.Conductor["pathingTrains"], {
     ["trainEntity"                   ] = trainFrontEntity,
     ["trainDemolishingPosition"      ] = trainDemolishingPosition,
+    ["trainDemolishingIndex"         ] = Traincontroller:getTrainDemolisherIndex(trainController),
     ["initialArrivingSpeed"          ] = trainSpeed,
     ["initialArrivingDistanceSquared"] = trainBreakingDistance,
     ["currentArrivingDistanceSquared"] = trainBreakingDistance
@@ -60,6 +61,12 @@ end
 
 
 
+function Traincontroller.Demolisher.Conductor:removeArrivingTrain(pathingTrainIndex)
+  table.remove(global.TC_data.Demolisher.Conductor["pathingTrains"], pathingTrainIndex)
+end
+
+
+
 --------------------------------------------------------------------------------
 -- Getter functions to extract data from the data structure
 --------------------------------------------------------------------------------
@@ -69,22 +76,25 @@ end
 
 
 
+function Traincontroller.Demolisher.Conductor:hasPathingTrains()
+  return #self:getPathingTrains() > 0
+end
+
+
+
 --------------------------------------------------------------------------------
 -- Behaviour functions
 --------------------------------------------------------------------------------
 function Traincontroller.Demolisher.Conductor:calculateArrivingSpeed(squaredDistance, initialSquaredDistance, initialSpeed)
   --return ( 1 - math.cos(squaredDistance/initialSquaredDistance*math.pi/2) ) * initialSpeed
-  local speed = squaredDistance/initialSquaredDistance * initialSpeed
-  if speed > 0.01 then
-    return speed
-  else
-    return 0.01
-  end
+  --return (0.45 * math.cos(math.pi * (squaredDistance/initialSquaredDistance - 1)) + 0.55) * initialSpeed
+  return math.max(math.sqrt(squaredDistance/initialSquaredDistance), 0.135) * initialSpeed
 end
 
 
 
 function Traincontroller.Demolisher.Conductor:monitorArrivingTrain(arrivingTrain)
+  -- Monitors an arriving train.
   -- Returns true if train is arrived at destination
   local arrivingTrainEntity = arrivingTrain.trainEntity
   local arrivingTrainPosition = arrivingTrainEntity.position
@@ -93,18 +103,60 @@ function Traincontroller.Demolisher.Conductor:monitorArrivingTrain(arrivingTrain
   local distanceY = demolisherPosition.y - arrivingTrainPosition.y
   local distanceSquared = distanceX * distanceX + distanceY * distanceY
 
-  if distanceSquared > arrivingTrain["currentArrivingDistanceSquared"] then
-    -- todo: we went too far....
-    arrivingTrainEntity.train.speed = 0
-    return false -- todo: return true
+  if distanceSquared <= arrivingTrain["currentArrivingDistanceSquared"] then
+    -- STEP 1: the train is getting closer to destination
+    arrivingTrainEntity.train.speed = Traincontroller.Demolisher.Conductor:calculateArrivingSpeed(
+      distanceSquared, arrivingTrain["initialArrivingDistanceSquared"], arrivingTrain["initialArrivingSpeed"])
+    arrivingTrain["currentArrivingDistanceSquared"] = distanceSquared
+    return false
   end
 
-  -- getting closer to destination
-  arrivingTrainEntity.train.speed = Traincontroller.Demolisher.Conductor:calculateArrivingSpeed(
-    distanceSquared, arrivingTrain["initialArrivingDistanceSquared"], arrivingTrain["initialArrivingSpeed"])
-  log(arrivingTrainEntity.train.speed)
-  arrivingTrain["currentArrivingDistanceSquared"] = distanceSquared
-  return false
+  -- STEP 2: the train arrived (past) the destination,
+  --         check if the train can be deconstructed
+  local trainCarriages = arrivingTrainEntity.train.carriages
+  if #trainCarriages > #TrainDisassembly:getTrainDemolisher(arrivingTrain["trainDemolishingIndex"]) then
+    -- train is too long... leave the train be where it is now, and add some flying text to it...
+    arrivingTrainEntity.train.speed = 0
+    game.print("TODO: cannot be deconstructed line 114")
+    return true 
+  end
+
+  -- STEP 3: the train can be deconstructed,
+  --         now we can put it in the right place
+  local trainCarriagesToCreate = {}
+  for _, trainCarriage in pairs(trainCarriages) do
+    local demolisherMachineEntity = arrivingTrainEntity.surface.find_entities_filtered{
+      name     = TrainDisassembly:getMachineEntityName(),
+      --force    = trainCarriage.force,
+      position = trainCarriage.position,
+      limit    = 1,
+    }[1]
+    if demolisherMachineEntity then
+      table.insert(trainCarriagesToCreate, {
+        name                      = trainCarriage.name,
+        position                  = demolisherMachineEntity.position,
+        direction                 = trainCarriage.direction,
+        force                     = trainCarriage.force,
+        player                    = trainCarriage.last_user,
+        raise_built               = true,
+        create_build_effect_smoke = false,
+        snap_to_train_stop        = false
+      })
+    end
+  end
+  local arrivingTrainSurface = arrivingTrainEntity.surface
+  for _, trainCarriage in pairs(trainCarriages) do
+    local driver = trainCarriage.get_driver()
+    trainCarriage.destroy{raise_destroy = true}
+    if driver then -- driver is ejected
+      driver.teleport(Traincontroller:getTrainControllerRailPosition(arrivingTrain["trainDemolishingIndex"]))
+    end
+  end
+  for _, trainCarriage in pairs(trainCarriagesToCreate) do
+    arrivingTrainSurface.create_entity(trainCarriage)
+  end
+  game.print("TODO: insert train content into clone line 152")
+  return true
 end
 
 
@@ -118,10 +170,17 @@ function Traincontroller.Demolisher.Conductor:onTick(event)
   local pathingTrainAmount = #pathingTrains
   local pathingTrainIndex = 1
   while pathingTrainIndex <= pathingTrainAmount do
-    if Traincontroller.Demolisher.Conductor:monitorArrivingTrain(pathingTrains[pathingTrainIndex]) then
-      -- TODO: remove from pathing trains
+    if self:monitorArrivingTrain(pathingTrains[pathingTrainIndex]) then
+      -- train has arrived at destination
+      local trainDemolishingIndex = self:getPathingTrains()[pathingTrainIndex]["trainDemolishingIndex"]
+      self:removeArrivingTrain(pathingTrainIndex)
       pathingTrainAmount = pathingTrainAmount - 1
+      if pathingTrainAmount == 0 then
+        Traincontroller.Demolisher:deactivateOnTick()
+      end
+      Traincontroller.Demolisher:activateDemolisher(trainDemolishingIndex)
     else
+      -- train has not arrived fully at destination
       pathingTrainIndex = pathingTrainIndex + 1
     end
   end
@@ -147,16 +206,16 @@ function Traincontroller.Demolisher.Conductor:onTrainScheduleChanged(trainEntity
       local trainRailPosition = trainScheduledRail.position
       if trainRailDirection == defines.direction.north or trainRailDirection == defines.direction.south then
         trainScheduledStop = trainScheduledRail.surface.find_entities_filtered{
-          name = Traincontroller:getControllerEntityName(),
+          name  = Traincontroller:getControllerEntityName(),
           force = trainEntity.force,
-          area = {{trainRailPosition.x - 2, trainRailPosition.y}, {trainRailPosition.x + 2, trainRailPosition.y}},
+          area  = {{trainRailPosition.x - 2, trainRailPosition.y}, {trainRailPosition.x + 2, trainRailPosition.y}},
           limit = 1
         }[1]
       else -- east/west
         trainScheduledStop = trainScheduledRail.surface.find_entities_filtered{
-          name = Traincontroller:getControllerEntityName(),
+          name  = Traincontroller:getControllerEntityName(),
           force = trainEntity.force,
-          area = {{trainRailPosition.x, trainRailPosition.y - 2}, {trainRailPosition.x, trainRailPosition.y + 2}},
+          area  = {{trainRailPosition.x, trainRailPosition.y - 2}, {trainRailPosition.x, trainRailPosition.y + 2}},
           limit = 1
         }[1]
       end
