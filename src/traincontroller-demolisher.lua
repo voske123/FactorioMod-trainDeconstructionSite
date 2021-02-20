@@ -209,14 +209,14 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
 
   if controllerStatus == controllerStates["priming"] then
-    -- remove any items/fuel from the train
+    -- registering the train to be demolised, put the recipe input into the furnaces
     game.print("TODO Traincontroller.Demolisher line 216")
     controllerStatus = controllerStates["demolishing"]
   end
 
 
   if controllerStatus == controllerStates["demolishing"] then
-    -- remove any items/fuel from the train
+    -- wait on the furnaces to have processed the recipe, remove train when done
     game.print("TODO Traincontroller.Demolisher line 220")
     --controllerStatus = controllerStates["priming"]
   end
