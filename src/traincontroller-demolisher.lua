@@ -84,7 +84,6 @@ function Traincontroller.Demolisher:activateDemolisher(trainDemolisherIndex)
   -- STEP 1: find a suitable train that can be demolished
   local trainToBeDemolished = nil
   local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
-  log(serpent.block(trainDemolishers))
   local trainDemolisherSurfaceIndex = trainDemolishers[1]["surfaceIndex"]
   local trainDemolisherSurface = game.get_surface(trainDemolisherSurfaceIndex)
   for _,trainDemolisher in pairs(trainDemolishers or {}) do
@@ -203,6 +202,7 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
   if controllerStatus == controllerStates["emptying"] then
     -- remove any items/fuel from the train
+    -- remove trainshedule
     game.print("TODO Traincontroller.Demolisher line 207")
     controllerStatus = controllerStates["priming"]
   end
@@ -210,8 +210,17 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
   if controllerStatus == controllerStates["priming"] then
     -- registering the train to be demolised, put the recipe input into the furnaces
-    game.print("TODO Traincontroller.Demolisher line 216")
-    controllerStatus = controllerStates["demolishing"]
+    local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
+    for _, trainDemolisher in pairs(trainDemolishers) do
+      local removedEntity = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
+      local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
+      if removedEntity and removedEntity.valid and furnaceEntity and furnaceEntity.valid then
+        local fluidName = removedEntity.name .. "-fluid"
+        furnaceEntity.insert_fluid({name = fluidName, amount = 1})
+      end
+    end   
+
+   controllerStatus = controllerStates["demolishing"]
   end
 
 
@@ -296,3 +305,4 @@ function Traincontroller.Demolisher:deactivateOnTick()
   script.on_nth_tick(global.TC_data.Demolisher["onTickDelay"], nil)
   global.TC_data.Demolisher["onTickActive"] = false
 end
+
