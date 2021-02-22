@@ -179,6 +179,7 @@ function Traincontroller.Demolisher:hasControllers()
 end
 
 
+
 --------------------------------------------------------------------------------
 -- Behaviour functions
 --------------------------------------------------------------------------------
@@ -209,25 +210,35 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
 
   if controllerStatus == controllerStates["priming"] then
-    -- registering the train to be demolised, put the recipe input into the furnaces
+    -- registering the train to be demolised, put the recipe input into the furnaces if it is researched
     local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
+
     for _, trainDemolisher in pairs(trainDemolishers) do
       local removedEntity = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
       local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
       if removedEntity and removedEntity.valid and furnaceEntity and furnaceEntity.valid then
-        local fluidName = removedEntity.name .. "-fluid"
-        furnaceEntity.insert_fluid({name = fluidName, amount = 1})
+        furnaceEntity.insert_fluid({name = removedEntity.name .. "-fluid", amount = 1})
       end
-    end   
+    end
 
-   controllerStatus = controllerStates["demolishing"]
+    controllerStatus = controllerStates["demolishing"]
   end
 
 
   if controllerStatus == controllerStates["demolishing"] then
-    -- wait on the furnaces to have processed the recipe, remove train when done
-    game.print("TODO Traincontroller.Demolisher line 220")
-    --controllerStatus = controllerStates["priming"]
+    -- check schedule = empty
+    -- wait on the furnaces to have processed the recipe
+    -- remove train when done
+    local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
+    for _, trainDemolisher in pairs(trainDemolishers) do
+      local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
+      if furnaceEntity and furnaceEntity.valid then 
+        --TODO: check if recipe is finished
+        --game.print(furnaceEntity.is_crafting())
+      end
+    end
+    game.print("TODO Traincontroller.Demolisher line 240")
+    --controllerStatus = controllerStates["idle"]
   end
 
 
@@ -242,7 +253,7 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
     -- update the gui if needed
     if controllerStatus ~= oldControllerStatus then
-      game.print("TODO Traincontroller.Demolisher line 235")
+      game.print("TODO Traincontroller.Demolisher line 277")
       --Traincontroller.Gui:updateOpenedGuis(controllerEntity)
     end
   end
