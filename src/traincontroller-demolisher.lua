@@ -226,19 +226,27 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
 
   if controllerStatus == controllerStates["demolishing"] then
-    -- check schedule = empty
-    -- wait on the furnaces to have processed the recipe
-    -- remove train when done
+    -- Wait until the demolisher is done before removing the train entity.
+    
+    controllerStatus = controllerStates["idle"] -- assume we can move on
+    
     local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
     for _, trainDemolisher in pairs(trainDemolishers) do
+      local removedEntity = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
       local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
-      if furnaceEntity and furnaceEntity.valid then 
-        --TODO: check if recipe is finished
-        --game.print(furnaceEntity.is_crafting())
+      if removedEntity and removedEntity.valid and furnaceEntity and furnaceEntity.valid then
+        -- check if the furnace is still crafting, or that it still has to start crafting
+        if furnaceEntity.is_crafting() or furnaceEntity.get_fluid_count(removedEntity.name .. "-fluid") > 0 then
+          controllerStatus = controllerStates["demolishing"] -- not done yet...
+          -- TODO: check schedule = empty
+          -- TODO: make sure fuel stays empty
+        else
+          removedEntity.destroy{raise_destroy = true}
+          TrainDisassembly:setRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position, nil)
+        end
       end
     end
     game.print("TODO Traincontroller.Demolisher line 240")
-    --controllerStatus = controllerStates["idle"]
   end
 
 
