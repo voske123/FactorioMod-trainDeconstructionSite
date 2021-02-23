@@ -202,6 +202,8 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
 
   if controllerStatus == controllerStates["emptying"] then
+    
+    
     -- remove any items/fuel from the train
     -- remove trainshedule
     game.print("TODO Traincontroller.Demolisher line 207")
@@ -235,18 +237,36 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
       local removedEntity = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
       local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
       if removedEntity and removedEntity.valid and furnaceEntity and furnaceEntity.valid then
+        --remove fuel from locomotives
+        if removedEntity.type == "locomotive" then
+          local inventory = removedEntity.get_fuel_inventory()
+          if inventory and (not inventory.is_empty()) then
+            inventory.clear()
+            game.print("TODO Traincontroller.Demolisher line 245") -- give items back instead of clear
+          end
+        end
+        local removedTrain = removedEntity.train
+        -- clear trainschedule
+        if removedTrain.schedule then
+          removedTrain.schedule = nil
+        end
+        -- make sure to keep the speed at 0 (so stopped train)
+        if removedTrain.speed ~= 0 then
+          removedTrain.speed = 0
+        end
+        -- make sure the train is still on manual mode
+        if not removedTrain.manual_mode then 
+          removedTrain.manual_mode = true
+        end
         -- check if the furnace is still crafting, or that it still has to start crafting
         if furnaceEntity.is_crafting() or furnaceEntity.get_fluid_count(removedEntity.name .. "-fluid") > 0 then
           controllerStatus = controllerStates["demolishing"] -- not done yet...
-          -- TODO: check schedule = empty
-          -- TODO: make sure fuel stays empty
         else
           removedEntity.destroy{raise_destroy = true}
           TrainDisassembly:setRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position, nil)
         end
       end
     end
-    game.print("TODO Traincontroller.Demolisher line 240")
   end
 
 
