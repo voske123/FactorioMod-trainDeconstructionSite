@@ -140,7 +140,13 @@ function Traincontroller.Demolisher.Conductor:monitorArrivingTrain(arrivingTrain
         player                    = trainCarriage.last_user,
         raise_built               = true,
         create_build_effect_smoke = false,
-        snap_to_train_stop        = false
+        snap_to_train_stop        = false,
+        content                   = {
+          fuel            = trainCarriage.type == "locomotive"      and trainCarriage.get_fuel_inventory().get_contents()                                  or {},
+          item_cargo      = trainCarriage.type == "cargo-wagon"     and trainCarriage.get_inventory(defines.inventory.cargo_wagon).get_contents()          or {},
+          fluid_cargo     = trainCarriage.type == "fluid-wagon"     and trainCarriage.get_fluid_contents()                                                 or {},
+          artillery_cargo = trainCarriage.type == "artillery-wagon" and trainCarriage.get_inventory(defines.inventory.artillery_wagon_ammo).get_contents() or {},
+        }
       })
     end
   end
@@ -153,9 +159,24 @@ function Traincontroller.Demolisher.Conductor:monitorArrivingTrain(arrivingTrain
     end
   end
   for _, trainCarriage in pairs(trainCarriagesToCreate) do
-    arrivingTrainSurface.create_entity(trainCarriage)
+    local createdEntity = arrivingTrainSurface.create_entity(trainCarriage)
+    local content = trainCarriage.content
+    for fuelName, fuelAmount in pairs(content.fuel) do
+      createdEntity.get_fuel_inventory().insert{name = fuelName, count = fuelAmount} --insert fuel
+    end
+    for itemName, itemAmount in pairs(content.item_cargo) do
+      createdEntity.get_inventory(defines.inventory.cargo_wagon).insert{name = itemName, count = itemAmount}  --insert items
+    end
+    for fluidName, fluidAmount in pairs(content.fluid_cargo) do
+      createdEntity.insert_fluid{name = fluidName, amount = fluidAmount}
+    end
+    for ammoName, ammoAmount in pairs(content.artillery_cargo) do
+      createdEntity.get_inventory(defines.inventory.artillery_wagon_ammo).insert{name = ammoName, count = ammoAmount}
+    end
   end
-  game.print("TODO: insert train content into clone line 152")
+--  TODO: insert depleted fuel content into clone line 152
+--  TODO: insert equipment into clone line 152
+
   return true
 end
 

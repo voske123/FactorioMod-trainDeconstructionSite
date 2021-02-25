@@ -202,12 +202,46 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
 
   if controllerStatus == controllerStates["emptying"] then
-    
-    
+    local trainEmpty = true
+    local trainDemolishers = TrainDisassembly:getTrainDemolisher(trainDemolisherIndex)
+    for _, trainDemolisher in pairs(trainDemolishers) do
+      local removedEntity = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
+      local furnaceEntity = TrainDisassembly:getMachineEntity(trainDemolisher.surfaceIndex, trainDemolisher.position)
+      if removedEntity and removedEntity.valid and furnaceEntity and furnaceEntity.valid then
+        local availableFurnaceEnergy = furnaceEntity.energy
+        local furnaceInventory = furnaceEntity.get_output_inventory()
+        if removedEntity.type == "cargo-wagon" then
+          local removedCargoInventory = removedEntity.get_inventory(defines.inventory.cargo_wagon)
+          local itemNameToEmpty = nil
+          local itemCountToEmpty = nil
+          if furnaceInventory.is_empty() then
+            itemNameToEmpty, itemCountToEmpty = next(removedCargoInventory.get_contents())
+          else
+            itemNameToEmpty, _ = next(furnaceInventory.get_contents())
+            itemCountToEmpty = removedCargoInventory.get_item_count(itemNameToEmpty)
+          end
+          local energyTransferRate = 1000 -- 1 KJ/Item
+          if itemCountToEmpty > 0 then
+            trainEmtpy = false
+            local requiredFurnaceEnergy = itemCountToEmpty * energyTransferRate
+            if requiredFurnaceEnergy > availableFurnaceEnergy then
+              itemCountToEmpty = math.floor(availableFurnaceEnergy/energyTransferRate)
+            end
+          end
+          itemCountToEmpty = furnaceInventory.insert{name = itemNameToEmpty, count = itemCountToEmpty}
+          requiredFurnaceEnergy = itemCountToEmpty * energyTransferRate
+          furnaceEntity.energy = availableFurnaceEnergy - requiredFurnaceEnergy
+          removedCargoInventory.remove{name = itemNameToEmpty, count = itemCountToEmpty}
+        else
+          game.print("TODO Traincontroller.Demolisher line 237")
+        end
+      end
+    end
     -- remove any items/fuel from the train
     -- remove trainshedule
-    game.print("TODO Traincontroller.Demolisher line 207")
-    controllerStatus = controllerStates["priming"]
+    if trainEmpty then 
+      controllerStatus = controllerStates["priming"]
+    end
   end
 
 
