@@ -212,9 +212,13 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
         local furnaceInventory = furnaceEntity.get_output_inventory()
 
         -- the empty behaviour differs for each type of entity...
-        if removedEntity.type == "cargo-wagon" then
-          local removedCargoInventory = removedEntity.get_inventory(defines.inventory.cargo_wagon)
-          if not removedCargoInventory.is_empty() then
+        if removedEntity.type == "cargo-wagon" or removedEntity.type == "artillery-wagon" then
+          local removedInventory = removedEntity.get_inventory(
+            removedEntity.type == "cargo-wagon" and defines.inventory.cargo_wagon or
+            removedEntity.type == "artillery-wagon" and defines.inventory.artillery_wagon_ammo or
+            nil
+          )
+          if not removedInventory.is_empty() then
             -- the cargo wagon is not empty, so the train is also not empty..
             trainEmpty = false
 
@@ -222,11 +226,11 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
             local itemNameToEmpty = nil
             local itemCountToEmpty = 0
             if furnaceInventory.is_empty() then -- furnace has no item, we just pick a new item from the cargo wagon
-              itemNameToEmpty, itemCountToEmpty = next(removedCargoInventory.get_contents())
+              itemNameToEmpty, itemCountToEmpty = next(removedInventory.get_contents())
               itemCountToEmpty = itemCountToEmpty or 0
             else -- furnace has an item, we just top up the furnace as full as possible
               itemNameToEmpty, _ = next(furnaceInventory.get_contents())
-              itemCountToEmpty = removedCargoInventory.get_item_count(itemNameToEmpty)
+              itemCountToEmpty = removedInventory.get_item_count(itemNameToEmpty)
             end
 
             -- moving some items is costly, we need to keep an eye on the energy...
@@ -248,23 +252,81 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
                 if itemCountToEmpty > 0 then
                   requiredFurnaceEnergy = itemCountToEmpty * energyTransferRate
                   furnaceEntity.energy = availableFurnaceEnergy - requiredFurnaceEnergy
-                  removedCargoInventory.remove{name = itemNameToEmpty, count = itemCountToEmpty}
+                  removedInventory.remove{name = itemNameToEmpty, count = itemCountToEmpty}
                 end
               end
             end
           end
+        elseif removedEntity.type == "locomotive" then
+          local removedFuelInventory = removedEntity.get_fuel_inventory()
+          if not removedFuelInventory.is_empty() then
+            -- the locomtive is not empty, so the train is also not empty..
+            trainEmpty = false
 
-        else -- other entities than cargo wagon
-          game.print("TODO Traincontroller.Demolisher line 256")
-          -- remove any items/fuel from the train
+            -- Locomotive is not empty, we need to select which item is valid to be moved at this point
+            local itemNameToEmpty = nil
+            local itemCountToEmpty = 0
+            if furnaceInventory.is_empty() then -- furnace has no item, we just pick a new item from the cargo wagon
+              itemNameToEmpty, itemCountToEmpty = next(removedFuelInventory.get_contents())
+              itemCountToEmpty = itemCountToEmpty or 0
+            else -- furnace has an item, we just top up the furnace as full as possible
+              itemNameToEmpty, _ = next(furnaceInventory.get_contents())
+              itemCountToEmpty = removedFuelInventory.get_item_count(itemNameToEmpty)
+            end
+
+            -- moving some items is costly, we need to keep an eye on the energy...
+            if itemCountToEmpty > 0 then
+              -- calculate the energy transfer rate for the disassembler
+              local energyTransferRate = 1000 -- 1 KJ/Item
+
+              -- make sure we have enough energy to do the transfer, if not, we need to reduce the amount we transfer
+              local requiredFurnaceEnergy = itemCountToEmpty * energyTransferRate
+              if requiredFurnaceEnergy > availableFurnaceEnergy then
+                itemCountToEmpty = math.floor(availableFurnaceEnergy/energyTransferRate)
+              end
+
+              -- now we can safely execute the moving
+              if itemCountToEmpty > 0 then
+                itemCountToEmpty = furnaceInventory.insert{name = itemNameToEmpty, count = itemCountToEmpty}
+                
+                -- if the move was somewhat successfull, we remove some energy
+                if itemCountToEmpty > 0 then
+                  requiredFurnaceEnergy = itemCountToEmpty * energyTransferRate
+                  furnaceEntity.energy = availableFurnaceEnergy - requiredFurnaceEnergy
+                  removedFuelInventory.remove{name = itemNameToEmpty, count = itemCountToEmpty}
+                end
+              end
+            end
+          end
+        
+        else -- Fluid cargo inventory
+          game.print("TODO Traincontroller.Demolisher line 303")
+          -- TODO Fluid-cargo inventory 
         end
       end
     end
 
-    -- remove trainshedule
+    local trainDemolisher = nil
+    _, trainDemolisher = next(trainDemolishers)
+    if trainDemolisher then
+      local removedTrain = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position).train
+      -- remove trainschedule
+      if removedTrain.schedule then
+        removedTrain.schedule = nil
+      end
+      -- make sure to keep the speed at 0 (so stopped train)
+      if removedTrain.speed ~= 0 then
+        removedTrain.speed = 0
+      end
+      -- make sure the train is still on manual mode
+      if not removedTrain.manual_mode then 
+        removedTrain.manual_mode = true
+      end      
+    end
 
     -- after iterating the whole train empty part, we can move on if the train is empty...
     if trainEmpty then 
+      game.print(" trainEmpty __ traincontroller.demolisher line 311")
       controllerStatus = controllerStates["priming"]
     end
   end
@@ -344,7 +406,6 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
       --Traincontroller.Gui:updateOpenedGuis(controllerEntity)
     end
   end
-
 end
 
 
@@ -403,4 +464,3 @@ function Traincontroller.Demolisher:deactivateOnTick()
   script.on_nth_tick(global.TC_data.Demolisher["onTickDelay"], nil)
   global.TC_data.Demolisher["onTickActive"] = false
 end
-
