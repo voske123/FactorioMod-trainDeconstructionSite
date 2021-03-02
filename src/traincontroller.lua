@@ -4,7 +4,7 @@ require("__LSlib__/LSlib")
 -- Create class
 Traincontroller = {}
 require 'src.traincontroller-demolisher'
---require 'src.traincontroller-gui'
+require 'src.traincontroller-gui'
 
 --------------------------------------------------------------------------------
 -- Initiation of the class
@@ -15,7 +15,7 @@ function Traincontroller:onInit()
     global.TC_data = self:initGlobalData()
   end
   self.Demolisher:onInit()
-  --self.Gui    :onInit()
+  self.Gui    :onInit()
 end
 
 

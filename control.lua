@@ -14,7 +14,7 @@ script.on_init(function(event)
   -- This is called once when a new save game is created or once
   -- when a save file is loaded that previously didn't contain the mod.
   --Debug           :onInit()
-  TrainDisassembly   :onInit()
+  TrainDisassembly:onInit()
   Traincontroller :onInit()
   --ModCompatibility:onInit()
 end)
@@ -22,7 +22,7 @@ end)
 
 
 script.on_load(function()
-  Traincontroller :onLoad()
+  Traincontroller:onLoad()
   --ModCompatibility:onLoad()
 end)
 
@@ -35,17 +35,9 @@ end)
 
 
 
-script.on_event(defines.events.on_player_created, function(event)
-  -- Called after the new player was created.
-  --Debug              :onPlayerCreated(event.player_index)
-  --Traincontroller.Gui:onPlayerCreated(event.player_index)
-end)
-
-
-
 script.on_event(defines.events.on_player_left_game, function(event)
   -- Called after a player leaves the game.
-  --Traincontroller.Gui:onPlayerLeftGame(event.player_index)
+  Traincontroller.Gui:onPlayerLeftGame(event.player_index)
 end)
 
 
@@ -58,8 +50,8 @@ script.on_event({defines.events.on_built_entity      ,
   local createdEntity = event.created_entity or event.entity
   if createdEntity and createdEntity.valid then
     local playerIndex = event.player_index
-    TrainDisassembly  :onBuildEntity(createdEntity, playerIndex)
-    Traincontroller:onBuildEntity(createdEntity, playerIndex)
+    TrainDisassembly:onBuildEntity(createdEntity, playerIndex)
+    Traincontroller :onBuildEntity(createdEntity, playerIndex)
   end
 end)
 
@@ -72,8 +64,8 @@ script.on_event({defines.events.on_player_mined_entity,
   -- Called when an entity gets removed.
   local removedEntity = event.entity
   if removedEntity and removedEntity.valid then
-    TrainDisassembly  :onRemoveEntity(removedEntity)
-    Traincontroller:onRemoveEntity(removedEntity)
+    TrainDisassembly:onRemoveEntity(removedEntity)
+    Traincontroller :onRemoveEntity(removedEntity)
   end
 end)
 
@@ -91,7 +83,7 @@ script.on_event({defines.events.on_player_rotated_entity,
   -- Called when player rotates an entity.
   local rotatedEntity = event.entity
   if rotatedEntity and rotatedEntity.valid then
-    TrainDisassembly  :onPlayerRotatedEntity(rotatedEntity)
+    TrainDisassembly:onPlayerRotatedEntity(rotatedEntity)
   end
 end)
 
@@ -107,14 +99,14 @@ end)
 
 script.on_event(defines.events.on_gui_opened, function(event)
   -- Called when the player opens a GUI.
-  --Traincontroller.Gui:onOpenEntity(event.entity, event.player_index)
+  Traincontroller.Gui:onOpenEntity(event.entity, event.player_index)
 end)
 
 
 
 script.on_event(defines.events.on_gui_closed, function(event)
   -- Called when the player closes a GUI.
-  --Traincontroller.Gui:onCloseEntity(event.element, event.player_index)
+  Traincontroller.Gui:onCloseEntity(event.element, event.player_index)
 end)
 
 
@@ -125,5 +117,5 @@ script.on_event({--defines.events.on_gui_elem_changed           , -- Called when
                  --defines.events.on_gui_selection_state_changed, -- Called when selection state is changed (dropdown/listbox)
                  defines.events.on_gui_click                  }, function(event)
   -- Called when the player clicks on a GUI.
-  --Traincontroller.Gui:onClickElement(event.element, event.player_index)
+  Traincontroller.Gui:onClickElement(event.element, event.player_index)
 end)
