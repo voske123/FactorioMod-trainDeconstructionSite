@@ -16,3 +16,5 @@ require "prototypes.entity.traindisassembly-controller"
 require "prototypes.technology.traindisassembly"
 require "prototypes.technology.traindisassembly-controller"
 require "prototypes.technology.traindisassembly-vehicles"
+
+require "prototypes.gui.styles.traincontroller"

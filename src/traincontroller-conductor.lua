@@ -135,7 +135,7 @@ function Traincontroller.Demolisher.Conductor:monitorArrivingTrain(arrivingTrain
       table.insert(trainCarriagesToCreate, {
         name                      = trainCarriage.name,
         position                  = demolisherMachineEntity.position,
-        direction                 = trainCarriage.direction,
+        direction                 = LSlib.utils.directions.orientationTo4WayDirection(trainCarriage.orientation),
         force                     = trainCarriage.force,
         player                    = trainCarriage.last_user,
         raise_built               = true,

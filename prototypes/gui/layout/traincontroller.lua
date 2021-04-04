@@ -34,5 +34,64 @@ LSlib.gui.layout.addSpriteButton(guiLayout, guiFrameHeaderFlow, "trainController
   sprite = "utility/close_white"      ,
   style = "LSlib_default_header_button",
 })
+
+local guiTabContent = LSlib.gui.layout.addTabs(guiLayout, guiFrame, "trainController-tab", {
+  { -- first tab
+    name     = "-statistics"                         ,
+    caption  = {"gui-trainController.tab-statistics"},
+    --selected = true                                  ,
+  },
+  { -- second tab
+    name     = "-selection"                              ,
+    caption  = {"gui-trainController.tab-name-selection"},
+    selected = true                                      ,
+  },
+}, {
+  buttonFlowStyle      = "LSlib_default_tab_buttonFlow"     ,
+  buttonStyle          = "LSlib_default_tab_button"         ,
+  buttonSelectedStyle  = "LSlib_default_tab_button_selected",
+  tabInsideFrameStyle  = "LSlib_default_tab_insideDeepFrame",
+  --tabContentFrameStyle = "LSlib_default_tab_contentFrame"   ,
+  tabContentFrameStyle = "trainController_contentFrame"     ,
+})
+
+
+
+--------------------------------------------------------------------------------
+-- Name selection tab                                                         --
+--------------------------------------------------------------------------------
+local guiTabContent2 = LSlib.gui.layout.getTabContentFrameFlow(guiLayout, guiTabContent, 2)
+
+local guiNewEntryFlow = LSlib.gui.layout.addFlow(guiLayout, guiTabContent2, "new-entry", "horizontal", {
+  style = "trainController_new_entry_flow",
+})
+
+LSlib.gui.layout.addLabel(guiLayout, guiNewEntryFlow, "selected-deconstructor-label", {
+  caption = {"", {"gui-trainController.new-name-field"}, " [img=info]"},
+  tooltip = {"gui-trainController.new-name-field-tooltip"},
+})
+LSlib.gui.layout.addTextfield(guiLayout, guiNewEntryFlow, "selected-deconstructor-name", {
+  text    = "Enter demolisher name",
+  tooltip = {"gui-trainController.new-name-field-tooltip"},
+  style = "trainController_new_entry_textfield",
+})
+LSlib.gui.layout.addSpriteButton(guiLayout, guiNewEntryFlow, "selected-deconstructor-enter", {
+  sprite = "utility/enter",
+  style = "tool_button"   ,
+})
+
+LSlib.gui.layout.addListbox(guiLayout, guiTabContent2, "selected-deconstructor-list", {
+  items = {"test1", "test2", "test3"},
+  style = "trainController_select_name_list_box",
+})
+
+
+
+--------------------------------------------------------------------------------
+-- statistics tab                                                             --
+--------------------------------------------------------------------------------
+local guiTabContent1 = LSlib.gui.layout.getTabContentFrameFlow(guiLayout, guiTabContent, 1)
+--TODO
+
 ----------------
 return guiLayout
