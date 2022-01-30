@@ -32,12 +32,12 @@ local trainControllerGui = require "prototypes.gui.layout.traincontroller"
 function Traincontroller.Gui:initPrototypeData()
   -- tabButtonPath
   local tabButtonPath = {}
-  --[[for _,tabButtonName in pairs{
-    "traincontroller-tab-selection" ,
-    "traincontroller-tab-statistics",
+  for _,tabButtonName in pairs{
+    "trainController-tab-selection" ,
+    "trainController-tab-statistics",
   } do
     tabButtonPath[tabButtonName] = LSlib.gui.layout.getElementPath(trainControllerGui, tabButtonName)
-  end--]]
+  end
 
   -- updateElementPath
   local updateElementPath = {}
@@ -64,7 +64,7 @@ function Traincontroller.Gui:initPrototypeData()
     ["trainControllerGui"] = trainControllerGui,
 
     -- gui element paths (derived from layout)
-    --["tabButtonPath"     ] = tabButtonPath     ,
+    ["tabButtonPath"     ] = tabButtonPath     ,
     ["updateElementPath" ] = updateElementPath ,
 
     --["recipeSelector"    ] = Trainassembly:getMachineEntityName() .. "-recipe-selector"
@@ -137,6 +137,34 @@ function Traincontroller.Gui:initClickHandlers()
 
 
   
+  ------------------------------------------------------------------------------
+  -- select train deconstructor name
+  ------------------------------------------------------------------------------
+  clickHandlers["selected-deconstructor-list"] = function(clickedElement, playerIndex)
+    local listboxElement = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-list"))
+
+    LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-name")).text = listboxElement.get_item(listboxElement.selected_index)
+  end
+
+
+
+  clickHandlers["selected-deconstructor-enter"] = function(clickedElement, playerIndex)
+    local controllerEntity  = Traincontroller.Gui:getOpenedControllerEntity(playerIndex)
+    local oldControllerName = controllerEntity.backer_name
+    local newControllerName = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-name")).text
+
+    if newControllerName ~= oldControllerName then
+      controllerEntity.backer_name = newControllerName -- invokes the rename event which will update UI's
+      Traincontroller.Gui:updateGuiInfo(playerIndex)   -- update twice to refresh the list
+    end
+
+    -- mimic tab pressed to go back to statistics tab
+    local tabToOpen = "trainController-tab-statistics"
+    Traincontroller.Gui:getClickHandler(tabToOpen)(LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getTabElementPath(tabToOpen)), playerIndex)
+  end
+
+
+
   --------------------
   return clickHandlers
 end
@@ -161,6 +189,12 @@ end
 --------------------------------------------------------------------------------
 function Traincontroller.Gui:getControllerGuiLayout()
   return global.TC_data.Gui["prototypeData"]["trainControllerGui"]
+end
+
+
+
+function Traincontroller.Gui:getTabElementPath(guiElementName)
+  return global.TC_data.Gui["prototypeData"]["tabButtonPath"][guiElementName]
 end
 
 
