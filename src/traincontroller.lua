@@ -316,6 +316,21 @@ end
 
 
 
+function Traincontroller:getAllTrainControllerNames(surfaceIndex)
+  if not global.TC_data["trainControllers"][surfaceIndex] then return {} end
+  
+  local entities = {}
+  for posY,posYdata in pairs(global.TC_data["trainControllers"][surfaceIndex]) do
+    for posX,trainController in pairs(posYdata) do
+        entities[trainController["entity"].backer_name] = true
+    end
+  end
+
+  return entities
+end
+
+
+
 function Traincontroller:getAllTrainControllers(surfaceIndex, controllerName)
   if not global.TC_data["trainControllers"][surfaceIndex] then return {} end
 

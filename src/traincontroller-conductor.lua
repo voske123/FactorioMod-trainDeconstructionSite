@@ -228,14 +228,14 @@ function Traincontroller.Demolisher.Conductor:onTrainScheduleChanged(trainEntity
       if trainRailDirection == defines.direction.north or trainRailDirection == defines.direction.south then
         trainScheduledStop = trainScheduledRail.surface.find_entities_filtered{
           name  = Traincontroller:getControllerEntityName(),
-          force = trainEntity.force,
+          force = trainEntity.front_stock.force,
           area  = {{trainRailPosition.x - 2, trainRailPosition.y}, {trainRailPosition.x + 2, trainRailPosition.y}},
           limit = 1
         }[1]
       else -- east/west
         trainScheduledStop = trainScheduledRail.surface.find_entities_filtered{
           name  = Traincontroller:getControllerEntityName(),
-          force = trainEntity.force,
+          force = trainEntity.front_stock.force,
           area  = {{trainRailPosition.x, trainRailPosition.y - 2}, {trainRailPosition.x, trainRailPosition.y + 2}},
           limit = 1
         }[1]

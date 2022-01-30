@@ -41,13 +41,13 @@ function Traincontroller.Gui:initPrototypeData()
 
   -- updateElementPath
   local updateElementPath = {}
-  --[[for _,selectionTabElementName in pairs{
-    "selected-depot-name", -- current/new depot name
-    "selected-depot-list", -- list of all depot names
+  for _,selectionTabElementName in pairs{
+    "selected-deconstructor-name", -- current/new depot name
+    "selected-deconstructor-list", -- list of all depot names
   } do
     updateElementPath[selectionTabElementName] = LSlib.gui.layout.getElementPath(trainControllerGui, selectionTabElementName)
   end
-  for _,statisticsTabElementName in pairs{
+  --[[for _,statisticsTabElementName in pairs{
     "statistics-station-id-value"                , -- controller name
     "statistics-depot-request-value"             , -- depot request amount
     "statistics-builder-status-value"            , -- controller status
@@ -65,7 +65,7 @@ function Traincontroller.Gui:initPrototypeData()
 
     -- gui element paths (derived from layout)
     --["tabButtonPath"     ] = tabButtonPath     ,
-    --["updateElementPath" ] = updateElementPath ,
+    ["updateElementPath" ] = updateElementPath ,
 
     --["recipeSelector"    ] = Trainassembly:getMachineEntityName() .. "-recipe-selector"
   }
@@ -126,6 +126,12 @@ end
 --------------------------------------------------------------------------------
 function Traincontroller.Gui:getControllerGuiLayout()
   return global.TC_data.Gui["prototypeData"]["trainControllerGui"]
+end
+
+
+
+function Traincontroller.Gui:getUpdateElementPath(guiElementName)
+  return global.TC_data.Gui["prototypeData"]["updateElementPath"][guiElementName]
 end
 
 
@@ -211,10 +217,30 @@ function Traincontroller.Gui:updateGuiInfo(playerIndex)
   -- data from the traindepo we require to update
   local openedEntity           = self:getOpenedControllerEntity(playerIndex)
   if not (openedEntity and openedEntity.valid) then
-    self:onCloseEntity(trainDepotGui, playerIndex)
+    self:onCloseEntity(trainControllerGui, playerIndex)
   end
 
   game.print("TODO: Traincontroller.Gui:updateGuiInfo")
+  local controllerName         = openedEntity.backer_name or ""
+  local controllerSurfaceIndex = openedEntity.surface.index or 1
+
+  -- select depot name ---------------------------------------------------------
+  LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-deconstructor-name")).caption = controllerName
+
+  -- name selection list
+  local deconstructorEntriesList = LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-deconstructor-list"))
+  deconstructorEntriesList.clear_items()
+  
+  local itemIndex = 1
+  local orderedPairs = LSlib.utils.table.orderedPairs
+  for trainControllerName,_ in orderedPairs(Traincontroller:getAllTrainControllerNames(controllerSurfaceIndex)) do
+    -- https://lua-api.factorio.com/latest/LuaGuiElement.html#LuaGuiElement.add_item
+    deconstructorEntriesList.add_item(trainControllerName)
+    if trainControllerName == controllerName then
+      deconstructorEntriesList.selected_index = itemIndex
+    end
+    itemIndex = itemIndex + 1
+  end
 end
 
 
