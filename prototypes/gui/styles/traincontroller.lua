@@ -11,3 +11,6 @@ guiStyles["trainController_contentFrame"] = util.table.deepcopy(guiStyles["train
 guiStyles["trainController_new_entry_flow"] = util.table.deepcopy(guiStyles["traindepot_new_entry_flow"])
 guiStyles["trainController_new_entry_textfield"] = util.table.deepcopy(guiStyles["traindepot_new_entry_textfield"])
 guiStyles["trainController_select_name_list_box"] = util.table.deepcopy(guiStyles["traindepot_select_name_list_box"])
+guiStyles["trainController_statistics_table"] = util.table.deepcopy(guiStyles["traindepot_statistics_table"])
+guiStyles["trainController_configuration_scrollpane"] = util.table.deepcopy(guiStyles["traincontroller_configuration_scrollpane"])
+

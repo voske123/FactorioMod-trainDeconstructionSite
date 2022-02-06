@@ -39,12 +39,12 @@ local guiTabContent = LSlib.gui.layout.addTabs(guiLayout, guiFrame, "trainContro
   { -- first tab
     name     = "-statistics"                         ,
     caption  = {"gui-trainController.tab-statistics"},
-    --selected = true                                  ,
+    selected = true                                  ,
   },
   { -- second tab
     name     = "-selection"                              ,
     caption  = {"gui-trainController.tab-name-selection"},
-    selected = true                                      ,
+    --selected = true                                      ,
   },
 }, {
   buttonFlowStyle      = "LSlib_default_tab_buttonFlow"     ,
@@ -66,21 +66,21 @@ local guiNewEntryFlow = LSlib.gui.layout.addFlow(guiLayout, guiTabContent2, "new
   style = "trainController_new_entry_flow",
 })
 
-LSlib.gui.layout.addLabel(guiLayout, guiNewEntryFlow, "selected-deconstructor-label", {
+LSlib.gui.layout.addLabel(guiLayout, guiNewEntryFlow, "selected-demolisher-label", {
   caption = {"", {"gui-trainController.new-name-field"}, " [img=info]"},
   tooltip = {"gui-trainController.new-name-field-tooltip"},
 })
-LSlib.gui.layout.addTextfield(guiLayout, guiNewEntryFlow, "selected-deconstructor-name", {
+LSlib.gui.layout.addTextfield(guiLayout, guiNewEntryFlow, "selected-demolisher-name", {
   text    = "Enter demolisher name",
   tooltip = {"gui-trainController.new-name-field-tooltip"},
   style = "trainController_new_entry_textfield",
 })
-LSlib.gui.layout.addSpriteButton(guiLayout, guiNewEntryFlow, "selected-deconstructor-enter", {
+LSlib.gui.layout.addSpriteButton(guiLayout, guiNewEntryFlow, "selected-demolisher-enter", {
   sprite = "utility/enter",
   style = "tool_button"   ,
 })
 
-LSlib.gui.layout.addListbox(guiLayout, guiTabContent2, "selected-deconstructor-list", {
+LSlib.gui.layout.addListbox(guiLayout, guiTabContent2, "selected-demolisher-list", {
   items = {"test1", "test2", "test3"},
   style = "trainController_select_name_list_box",
 })
@@ -91,7 +91,64 @@ LSlib.gui.layout.addListbox(guiLayout, guiTabContent2, "selected-deconstructor-l
 -- statistics tab                                                             --
 --------------------------------------------------------------------------------
 local guiTabContent1 = LSlib.gui.layout.getTabContentFrameFlow(guiLayout, guiTabContent, 1)
---TODO
+
+local statistics = LSlib.gui.layout.addTable(guiLayout, guiTabContent1, "statistics", 2, {
+  style = "trainController_statistics_table",
+})
+
+-- name
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-station-id", {
+  caption = {"", {"gui-trainController.connected-demolisher-name"}, " [img=info]"},
+  tooltip = {"gui-trainController.connected-demolisher-name-tooltip"},
+})
+local stationIDflow = LSlib.gui.layout.addFlow(guiLayout, statistics, "statistics-station-id-flow", "horizontal", {
+  style = "centering_horizontal_flow",
+})
+LSlib.gui.layout.addLabel(guiLayout, stationIDflow, "statistics-station-id-value", {
+  caption = {"gui-trainController.unused-demolisher-name"},
+  ignored_by_interaction = true,
+})
+LSlib.gui.layout.addSpriteButton(guiLayout, stationIDflow, "statistics-station-id-edit", {
+  sprite = "utility/rename_icon_small_black",
+  style = "mini_button",
+})
+
+-- deconstructor size
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-size", {
+  caption = {"", {"gui-trainController.demolisher-availability"}, " [img=info]"},
+  tooltip = {"gui-trainController.demolisher-availability-tooltip"},
+})
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-decontroller-size-value", {
+  caption = "-999/999",
+  ignored_by_interaction = true,
+})
+
+-- controller status
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-status", {
+  caption = {"gui-trainController.demolisher-status"},
+  ignored_by_interaction = true,
+})
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-status-value", {
+  caption = "undefined status",
+  ignored_by_interaction = true,
+})
+
+-- controller configuration
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-configuration", {
+  caption = {"gui-trainController.demolisher-configuration"},
+  ignored_by_interaction = true,
+})
+local controllerFlow = LSlib.gui.layout.addScrollPane(guiLayout, guiTabContent1, "statistics-demolisher-configuration-flow-scrolling", {
+  horizontal_scroll_policy = "always",
+  vertical_scroll_policy   = "never" ,
+
+  style = "trainController_configuration_scrollpane",
+})
+controllerFlow = LSlib.gui.layout.addFlow(guiLayout, controllerFlow, "statistics-demolisher-configuration-flow", "horizontal", {
+  style = "research_queue_first_slot_flow", -- no padding
+})
+
+
 
 ----------------
 return guiLayout

@@ -42,8 +42,8 @@ function Traincontroller.Gui:initPrototypeData()
   -- updateElementPath
   local updateElementPath = {}
   for _,selectionTabElementName in pairs{
-    "selected-deconstructor-name", -- current/new depot name
-    "selected-deconstructor-list", -- list of all depot names
+    "selected-demolisher-name", -- current/new depot name
+    "selected-demolisher-list", -- list of all depot names
   } do
     updateElementPath[selectionTabElementName] = LSlib.gui.layout.getElementPath(trainControllerGui, selectionTabElementName)
   end
@@ -140,18 +140,18 @@ function Traincontroller.Gui:initClickHandlers()
   ------------------------------------------------------------------------------
   -- select train deconstructor name
   ------------------------------------------------------------------------------
-  clickHandlers["selected-deconstructor-list"] = function(clickedElement, playerIndex)
-    local listboxElement = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-list"))
+  clickHandlers["selected-demolisher-list"] = function(clickedElement, playerIndex)
+    local listboxElement = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-demolisher-list"))
 
-    LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-name")).text = listboxElement.get_item(listboxElement.selected_index)
+    LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-demolisher-name")).text = listboxElement.get_item(listboxElement.selected_index)
   end
 
 
 
-  clickHandlers["selected-deconstructor-enter"] = function(clickedElement, playerIndex)
+  clickHandlers["selected-demolisher-enter"] = function(clickedElement, playerIndex)
     local controllerEntity  = Traincontroller.Gui:getOpenedControllerEntity(playerIndex)
     local oldControllerName = controllerEntity.backer_name
-    local newControllerName = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-deconstructor-name")).text
+    local newControllerName = LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getUpdateElementPath("selected-demolisher-name")).text
 
     if newControllerName ~= oldControllerName then
       controllerEntity.backer_name = newControllerName -- invokes the rename event which will update UI's
@@ -294,10 +294,10 @@ function Traincontroller.Gui:updateGuiInfo(playerIndex)
   local controllerSurfaceIndex = openedEntity.surface.index or 1
 
   -- select depot name ---------------------------------------------------------
-  LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-deconstructor-name")).caption = controllerName
+  LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-demolisher-name")).caption = controllerName
 
   -- name selection list
-  local deconstructorEntriesList = LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-deconstructor-list"))
+  local deconstructorEntriesList = LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-demolisher-list"))
   deconstructorEntriesList.clear_items()
   
   local itemIndex = 1

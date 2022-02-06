@@ -252,8 +252,7 @@ function Traincontroller:deleteController(controllerEntity)
 
   -- Update the UI
   controllerEntity.health = 0 -- set health to 0, otherwise it's not working
-  game.print("TODO: update ui in controller line 250")
-  --self.Gui:updateOpenedGuis(controllerEntity)
+  self.Gui:updateOpenedGuis(controllerEntity)
 end
 
 
@@ -569,8 +568,7 @@ function Traincontroller:checkValidAftherChanges(alteredEntity, playerIndex)
       end
 
 
-      game.print("TODO: update ui in controller line 589")
-      --self.Gui:updateOpenedGuis(trainController)
+      self.Gui:updateOpenedGuis(trainController)
       return true
     end
 
