@@ -92,7 +92,7 @@ function TrainDisassembly:saveNewStructure(machineEntity, machineRenderID)
     ["renderID"         ] = machineRenderID,         -- the renders of the building
     ["direction"        ] = machineEntity.direction, -- the direction its facing
     ["removedEntity"    ] = nil,                     -- the created train entity from this building
-    ["trainDemolisherIndex"] = nil,                     -- the trainBuilder it belongs to (see further down)
+    ["trainDemolisherIndex"] = nil,                  -- the trainBuilder it belongs to (see further down)
   }
 
   -- STEP 3: Check if this assembler is linked to another assemblers to make

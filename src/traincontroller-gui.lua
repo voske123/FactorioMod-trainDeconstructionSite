@@ -47,17 +47,17 @@ function Traincontroller.Gui:initPrototypeData()
   } do
     updateElementPath[selectionTabElementName] = LSlib.gui.layout.getElementPath(trainControllerGui, selectionTabElementName)
   end
-  --[[for _,statisticsTabElementName in pairs{
+  for _,statisticsTabElementName in pairs{
     "statistics-station-id-value"                , -- controller name
-    "statistics-depot-request-value"             , -- depot request amount
-    "statistics-builder-status-value"            , -- controller status
-    "statistics-builder-configuration-flow"      , -- controller configuration
+    "statistics-demolisher-size-value"             , -- depot request amount
+    "statistics-demolisher-status-value"            , -- controller status
+    "statistics-demolisher-configuration-flow"      , -- controller configuration
 
-    "traincontroller-color-picker"               , -- color picking frame
-    "traincontroller-color-picker-entity-preview", -- color picker entity preview
+    --"traincontroller-color-picker"               , -- color picking frame
+    --"traincontroller-color-picker-entity-preview", -- color picker entity preview
   } do
     updateElementPath[statisticsTabElementName] = LSlib.gui.layout.getElementPath(trainControllerGui, statisticsTabElementName)
-  end--]]
+  end
 
   return {
     -- gui layout
@@ -134,6 +134,29 @@ function Traincontroller.Gui:initClickHandlers()
   } do
     clickHandlers[tabButtonName] = tabButtonHandler
   end
+
+
+
+  ------------------------------------------------------------------------------
+  -- statistics
+  ------------------------------------------------------------------------------
+  clickHandlers["statistics-station-id-edit"] = function(clickedElement, playerIndex)
+    local tabToOpen = "trainController-tab-selection"
+    Traincontroller.Gui:getClickHandler(tabToOpen)(LSlib.gui.getElement(playerIndex, Traincontroller.Gui:getTabElementPath(tabToOpen)), playerIndex) -- mimic tab pressed
+  end
+
+
+
+  --[[clickHandlers["statistics-builder-configuration-button-recipe"] = function(clickedElement, playerIndex)
+    local player = game.get_player(playerIndex)
+    local recipeEntity =  player.surface.create_entity{
+      name     = Traincontroller.Gui:getRecipeSelectorEntityName(),
+      position = player.position,
+      force    = player.force,
+    }
+    Traincontroller.Gui:setOpenedRecipeEntity(playerIndex, recipeEntity)
+    player.opened = recipeEntity
+  end]]
 
 
   
@@ -290,8 +313,111 @@ function Traincontroller.Gui:updateGuiInfo(playerIndex)
   end
 
   game.print("TODO: Traincontroller.Gui:updateGuiInfo")
-  local controllerName         = openedEntity.backer_name or ""
-  local controllerSurfaceIndex = openedEntity.surface.index or 1
+  local controllerName            = openedEntity.backer_name or ""
+  local controllerSurfaceIndex    = openedEntity.surface.index or 1
+  local controllerIndex           = Traincontroller:getTrainDemolisherIndex(openedEntity)
+  local controllerDirection       = openedEntity.direction or defines.direction.north
+
+  local trainDemolisher           = TrainDisassembly:getTrainDemolisher(controllerIndex)
+  local demolishingCapacityCount  = #trainDemolisher
+  local demolishingTrainCount     = 0
+  for _, demolisherPosition in pairs(trainDemolisher) do
+    local removedEntity = TrainDisassembly:getRemovedEntity(demolisherPosition.surfaceIndex, demolisherPosition.position)
+    if removedEntity then
+      demolishingTrainCount = demolishingTrainCount + 1
+    end
+  end
+  local trainDemolisherIterator = TrainDisassembly:getTrainDemolisherIterator(controllerDirection)
+
+  -- statistics ----------------------------------------------------------------
+  -- controller deconstructor name
+  LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("statistics-station-id-value")).caption = controllerName
+
+  -- demolishing amount of trains in deconstructor
+  LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("statistics-demolisher-size-value")).caption = string.format(
+    "%i/%i", demolishingTrainCount, demolishingCapacityCount)
+
+  -- status of the builder
+  --LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("statistics-demolisher-status-value")).caption = self:getOpenedControllerStatusString(playerIndex)
+  game.print("traincontroller-gui lijn 339 TODO")
+
+  -- configuration
+  local configurationElement = LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("statistics-demolisher-configuration-flow"))
+  configurationElement.clear()
+  configurationElement.add{
+    type      = "flow",
+    name      = "0-traincontroller",
+    direction = "vertical",
+    style     = "trainController_configuration_flow",
+  }.add{
+    type    = "sprite-button",
+    name    = "statistics-builder-configuration-button-recipe",
+    tooltip = {"item-name.traincontroller", {"item-name.traindisassembly"}},
+    sprite  = string.format("item/%s", Traincontroller:getControllerItemName()),
+    enabled = false,
+  }
+  for trainDisassemblerIndex,trainDisassemblerLocation in trainDemolisherIterator(trainDemolisher) do
+    local trainDisassembler = TrainDisassembly:getMachineEntity(trainDisassemblerLocation.surfaceIndex, trainDisassemblerLocation.position)
+    if trainDisassembler and trainDisassembler.valid then
+      local flow = configurationElement.add{
+        type      = "flow",
+        name      = string.format("%i", trainDisassemblerIndex),
+        direction = "vertical",
+        style     = "trainController_configuration_flow",
+      }
+
+      local trainDisassemblerRecipe = trainDisassembler.get_recipe()
+      if trainDisassemblerRecipe then
+        flow.add{
+          type   = "sprite-button",
+          name   = "statistics-demolisher-configuration-button-recipe",
+          sprite = string.format("fluid/%s", trainDisassemblerRecipe.ingredients[1].name),
+          enabled = false,
+        }
+
+        --[[local trainAssemblyType = LSlib.utils.string.split(trainAssemblerRecipe.name, "[")[2]
+        trainAssemblyType = trainAssemblyType:sub(1, trainAssemblyType:len()-1)
+        if trainAssemblyType == "locomotive"      or
+           trainAssemblyType == "artillery-wagon" then
+          flow.add{
+            type    = "sprite-button",
+            name    = "statistics-builder-configuration-button-rotate",
+            tooltip = {"controls.rotate"},
+            sprite  = string.format("traincontroller-orientation-%s", trainAssembler.direction == controllerDirection and "L" or "R"),
+          }
+
+          if trainAssemblyType == "locomotive" then
+            flow.add{
+              type    = "button",
+              name    = "statistics-builder-configuration-button-color",
+              tooltip = {"gui-train.color"},
+              style   = "traincontroller_color_indicator_button_housing",
+            }.add{
+              type  = "progressbar",
+              name  = "statistics-builder-configuration-button-color",
+              value = 1,
+              style = "traincontroller_color_indicator_button_color",
+              ignored_by_interaction = true,
+            }.add{
+              type   = "sprite-button",
+              name   = "statistics-builder-configuration-button-color",
+              sprite = "utility/color_picker",
+              style  = "traincontroller_color_indicator_button_sprite",
+              ignored_by_interaction = true,
+            }.parent.style.color = Trainassembly:getMachineTint(trainAssembler)
+          end
+        end--]]
+      else 
+        flow.add{
+          type   = "sprite-button",
+          name   = "statistics-demolisher-configuration-button-recipe",
+          sprite = string.format("entity/%s", TrainDisassembly:getMachineEntityName()),
+          enabled = false,
+        }
+      end
+
+    end
+  end
 
   -- select depot name ---------------------------------------------------------
   LSlib.gui.getElement(playerIndex, self:getUpdateElementPath("selected-demolisher-name")).caption = controllerName

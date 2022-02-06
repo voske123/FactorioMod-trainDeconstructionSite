@@ -267,7 +267,12 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
     end
 
     local trainDemolisher = nil
-    _, trainDemolisher = next(trainDemolishers)
+    for _, demolisher in pairs(trainDemolishers) do
+      local removedEntity = TrainDisassembly:getRemovedEntity(demolisher.surfaceIndex, demolisher.position)
+      if removedEntity and removedEntity.valid then
+        trainDemolisher = demolisher
+      end
+    end
     if trainDemolisher then
       local removedTrain = TrainDisassembly:getRemovedEntity(trainDemolisher.surfaceIndex, trainDemolisher.position).train
       -- remove trainschedule
@@ -362,8 +367,7 @@ function Traincontroller.Demolisher:updateController(surfaceIndex, position)
 
     -- update the gui if needed
     if controllerStatus ~= oldControllerStatus then
-      game.print("TODO Traincontroller.Demolisher line 365")
-      --Traincontroller.Gui:updateOpenedGuis(controllerEntity)
+      Traincontroller.Gui:updateOpenedGuis(controllerEntity)
     end
   end
 end

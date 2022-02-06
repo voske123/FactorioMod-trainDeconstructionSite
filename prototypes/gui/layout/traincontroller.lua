@@ -118,7 +118,7 @@ LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-size", {
   caption = {"", {"gui-trainController.demolisher-availability"}, " [img=info]"},
   tooltip = {"gui-trainController.demolisher-availability-tooltip"},
 })
-LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-decontroller-size-value", {
+LSlib.gui.layout.addLabel(guiLayout, statistics, "statistics-demolisher-size-value", {
   caption = "-999/999",
   ignored_by_interaction = true,
 })
